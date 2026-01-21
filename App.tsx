@@ -3,13 +3,14 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Partners from './pages/Partners';
+import PartnerDetail from './pages/PartnerDetail';
 import DecisionRoom from './pages/DecisionRoom';
 import Intelligence from './pages/Intelligence';
 import Landing from './pages/Landing';
 
 const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: string }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = location.pathname.startsWith(to);
   
   return (
     <Link 
@@ -18,7 +19,7 @@ const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: str
         isActive ? 'sidebar-active text-white bg-white/5' : 'text-slate-500 hover:text-slate-300'
       }`}
     >
-      <i className={`fas ${icon} text-lg`}></i>
+      <i className={`fas ${icon} text-lg`} aria-hidden="true"></i>
       <span className="text-sm font-medium tracking-wide uppercase">{label}</span>
     </Link>
   );
@@ -28,12 +29,14 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex h-screen w-full bg-[#050505]">
       <aside className="w-64 border-r border-white/10 flex flex-col z-20 glass-panel">
-        <div className="p-8 mb-8">
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 group-hover:border-slate-400 transition-colors">
-              <i className="fas fa-eye text-slate-300"></i>
-            </div>
-            <h1 className="text-xl font-bold tracking-widest serif text-white">SENTINEL</h1>
+        <div className="p-8 mb-4">
+          <Link to="/" className="flex items-center justify-center group transition-transform hover:scale-105 active:scale-95">
+            <img 
+              src="https://images.squarespace-cdn.com/content/v1/5f1b1a774619d040825e648c/1614881676648-QAX550P3Z6V4D17X6C5U/Sentinel-Logo-Icon-Primary.png" 
+              alt="SENTINEL Home" 
+              className="h-12 w-auto brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity"
+              style={{ filter: 'brightness(0) invert(1)' }}
+            />
           </Link>
         </div>
         
@@ -80,10 +83,11 @@ const App: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
-        <Route path="/partners" element={<DashboardLayout><Partners /></DashboardLayout>} />
-        <Route path="/decisions" element={<DashboardLayout><DecisionRoom /></DashboardLayout>} />
-        <Route path="/intelligence" element={<DashboardLayout><Intelligence /></DashboardLayout>} />
+        <Route path="/dashboard" element={<DashboardLayout children={<Dashboard />} />} />
+        <Route path="/partners" element={<DashboardLayout children={<Partners />} />} />
+        <Route path="/partners/:id" element={<DashboardLayout children={<PartnerDetail />} />} />
+        <Route path="/decisions" element={<DashboardLayout children={<DecisionRoom />} />} />
+        <Route path="/intelligence" element={<DashboardLayout children={<Intelligence />} />} />
       </Routes>
     </Router>
   );
