@@ -240,7 +240,7 @@ const Landing: React.FC = () => {
             onClick={() => { setAuthMode('login'); setShowAuth(true); }}
             className="btn-primary group !bg-white/10 !text-white !backdrop-blur-xl border border-white/20 px-12 py-5 hover:!bg-white hover:!text-black transition-all shadow-2xl"
           >
-            <span className="text-xs uppercase tracking-[0.2em] font-bold">인텔리전스 허브 접속</span>
+            <span className="text-xs uppercase tracking-[0.2em] font-bold">S E N T I N E L</span>
             <i className="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform ml-3"></i>
           </button>
         </div>
@@ -256,17 +256,19 @@ const Landing: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 mb-24 items-end">
           <div className="md:col-span-6">
             <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-6 flex items-center">
-              <span className="w-2 h-2 bg-slate-400 mr-2"></span> 통합 플랫폼
+              <span className="w-2 h-2 bg-slate-400 mr-2"></span> STRAGITY / INSIGHT
             </div>
             <h2 className="text-5xl md:text-6xl font-light leading-[1.1] text-white mb-0">
-              전략, 인텔리전스, AI를 <br/>
-              결합해 <br/>
-              <span className="text-slate-500 italic">발견의 엔진으로.</span>
+              전략, 리스크, AI를 <br/>
+              통해 <br/>
+              <span className="text-slate-500 italic">드러내다.</span>
             </h2>
           </div>
           <div className="md:col-span-6">
-            <p className="text-lg text-slate-400 font-light leading-relaxed mb-8">
-              우리 플랫폼은 파트너 타깃과 경로를 정밀하고 유연하게 제어해 고해상도 데이터를 생성하며, 이는 고도화된 AI와 결합되어 기존에 접근하기 어려웠던 협업 공간을 체계적으로 탐색하게 합니다.
+            <p className="text-lg text-slate-400 font-light leading-relaxed mb-8 ">
+              힘의 차이가 느껴지십니까 Human?<br />
+              <br />
+              SENTINEL은 기업이 복잡한 협력 생태계를 전략적으로 탐색하고 제어할 수 있도록 지원합니다.
             </p>
             <button className="group flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white">
               <span className="bg-white/10 p-4 rounded-full group-hover:bg-white group-hover:text-black transition-all">
@@ -279,9 +281,9 @@ const Landing: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { num: '01.', title: '네트워크 분석', desc: '데이터를 활용해 기업 생태계를 전례 없는 정밀도로 제어합니다.', icon: 'fa-microscope' },
-            { num: '02.', title: '전략적 통합', desc: '최신 인텔리전스 도구로 네트워크 탐색을 최적화합니다.', icon: 'fa-vial' },
-            { num: '03.', title: '주권형 AI', desc: '차별화된 글로벌 데이터셋으로 구동되는 AI 엔진을 제공합니다.', icon: 'fa-brain' },
+            { num: '01.', title: '리스크 분석', desc: '분산된 지표를 결합해 기업의 잠재적 위험을 정밀하게 식별합니다.', icon: 'fa-microscope' },
+            { num: '02.', title: '통합 인사이트', desc: '복잡한 기업 정보를 결합하여 의사결정 시간을 효율적으로 관리합니다.', icon: 'fa-vial' },
+            { num: '03.', title: '흐름예측 AI', desc: '과거와 현재 데이터를 기반으로 향후 분기의 흐름을 선제적으로 예측합니다.', icon: 'fa-brain' },
           ].map((feat, i) => (
             <div key={i} className="p-10 border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-500 group">
               <div className="mb-12 flex justify-between items-start">
@@ -303,27 +305,29 @@ const Landing: React.FC = () => {
       <section className="py-32 px-10 border-t border-white/5">
          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
             <div className="relative aspect-[4/3] rounded-sm overflow-hidden bg-slate-900">
-               <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070&auto=format&fit=crop" alt="전략 연구" className="w-full h-full object-cover grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-1000" />
+               <img src="/img/team.jpg" alt="팀 사진" className="w-full h-full object-cover translate-y-5 grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-1000" />
                <div className="absolute inset-0 border-[20px] border-[#050505] pointer-events-none"></div>
             </div>
             <div>
             <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-6 flex items-center">
-                  <span className="w-2 h-2 bg-slate-400 mr-2"></span> 우리 회사
+                  <span className="w-2 h-2 bg-slate-400 mr-2"></span> Our Company
                </div>
                <h2 className="text-4xl md:text-5xl serif leading-tight mb-8">
-                 대담한 연구로 <br/>
-                 <span className="italic text-slate-400">파트너십 가치</span>를 열어 <br/>
-                 사람의 건강과 상업을 확장합니다.
+                 우리는 <br/>
+                 <span className="italic text-slate-400">데이터</span>를 읽고, <br/>
+                 판단 가능한 인사이트로 제공합니다.
                </h2>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                  <p className="text-sm text-slate-500 leading-relaxed">인텔리전스, 화학, AI로 복잡한 네트워크 생태를 해석하며 새로운 협력 프레임워크 파이프라인을 확장합니다.</p>
-                  <p className="text-sm text-slate-500 leading-relaxed">노화 관련 시장 비효율을 해결하는 것을 목표로, 궁극적으로는 네트워킹의 생태계를 근본부터 재정의합니다.</p>
+                  <p className="text-sm text-slate-500 leading-relaxed">전문가의 직관에 의존하던 판단을 데이터 기반 인사이트로 전환해,
+조직이 더 빠르고 일관된 의사결정을 내릴 수 있도록 돕습니다.</p>
+                  <p className="text-sm text-slate-500 leading-relaxed">우리는 문제가 발생한 뒤 설명하는 도구가 아니라,
+위험이 드러나기 전에 신호를 포착하는 시스템을 지향합니다.</p>
                </div>
                <button className="flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white group">
                   <span className="bg-white text-black p-4 rounded-full group-hover:bg-slate-200 transition-all">
                     <i className="fas fa-plus"></i>
                   </span>
-                  <span>회사 더 알아보기</span>
+                  <span>궁금하십니까?</span>
                </button>
             </div>
          </div>
@@ -333,9 +337,9 @@ const Landing: React.FC = () => {
       <section className="py-32 px-10 border-t border-white/5 bg-white/[0.01]">
          <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-end mb-20">
-               <h2 className="text-6xl serif font-light">뉴스룸</h2>
+               <h2 className="text-6xl serif font-light">소식이 궁금하시죠?</h2>
                <button className="px-6 py-2 border border-white/20 rounded-full text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                 모든 기사 보기 <i className="fas fa-arrow-right ml-2"></i>
+                 모든 뉴스카드 보기 <i className="fas fa-arrow-right ml-2"></i>
                </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -343,7 +347,7 @@ const Landing: React.FC = () => {
                   <div className="aspect-video bg-slate-900 overflow-hidden mb-8">
                      <img src="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=2080&auto=format&fit=crop" className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" alt="뉴스 1" />
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-4"><span>발행물</span><span>2025년 9월 4일</span></div>
+                  <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-4"><span>RECENT</span><span>2025년 9월 4일</span></div>
                   <h3 className="text-3xl serif mb-4 group-hover:text-slate-300 transition-colors">인텔리전스 기반 통합 스트레스 반응 조절자 발견</h3>
                   <p className="text-slate-500 text-sm mb-6 max-w-xl">이번 주요 논문에서 우리는 약물 발견의 새로운 방식을 열어주는 독창적인 옵토제네틱 스크리닝 플랫폼을 공개합니다.</p>
                   <span className="text-[10px] uppercase tracking-widest font-bold border-b border-white/20 pb-1 group-hover:border-white transition-all">기사 읽기</span>
