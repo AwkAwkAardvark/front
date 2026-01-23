@@ -95,10 +95,10 @@ const Landing: React.FC = () => {
                  <i className="fas fa-eye text-xs text-white"></i>
               </div>
               <h2 className="text-3xl font-light serif mb-2">
-                {authMode === 'login' ? '프로토콜 접근' : '노드 초기화'}
+                {authMode === 'login' ? '로그인' : '회원가입'}
               </h2>
               <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
-                {authMode === 'login' ? '센티널 인텔리전스 네트워크' : '글로벌 디렉터 협의회 참여'}
+                {authMode === 'login' ? '지금 바로 시작하세요' : '지금 바로 참여하세요'}
               </p>
             </div>
 
@@ -111,7 +111,7 @@ const Landing: React.FC = () => {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="이름을 입력해 주세요"
+                    placeholder="ID를 입력해 주세요"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.name)}
                   />
