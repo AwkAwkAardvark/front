@@ -56,7 +56,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ kpis }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <div className="relative z-20 grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
       {cards.map((stat) => {
         const deltaDirection = stat.tone === 'negative' ? 'down' : stat.tone === 'neutral' ? 'flat' : 'up';
         return (
