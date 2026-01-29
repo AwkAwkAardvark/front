@@ -1,7 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, register } from '../src/services/auth';
+import TurnstileWidget from '../src/components/TurnstileWidget';
 
 type AuthMode = 'login' | 'register';
 
@@ -11,6 +12,7 @@ const Landing: React.FC = () => {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const navigate = useNavigate();
 
   // Form State
@@ -25,6 +27,12 @@ const Landing: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (authMode !== 'register') {
+      setTurnstileToken('');
+    }
+  }, [authMode]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,10 +73,20 @@ const Landing: React.FC = () => {
       return;
     }
 
+    if (isRegister && !turnstileToken) {
+      setAuthError('Turnstile 인증을 완료해 주세요.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       if (isRegister) {
-        await register({ email: trimmedEmail, password, name: trimmedName });
+        await register({
+          email: trimmedEmail,
+          password,
+          name: trimmedName,
+          turnstileToken,
+        });
       } else {
         await login({ email: trimmedEmail, password });
       }
@@ -85,7 +103,15 @@ const Landing: React.FC = () => {
     setErrors({});
     setAuthError(null);
     setConfirmPassword('');
+    setTurnstileToken('');
   };
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    setTurnstileToken(token);
+    if (token) {
+      setAuthError(null);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-slate-500 selection:text-white relative">
@@ -187,6 +213,13 @@ const Landing: React.FC = () => {
                 </div>
               )}
 
+              {authMode === 'register' && (
+                <TurnstileWidget
+                  className="mt-2"
+                  onVerify={handleTurnstileVerify}
+                />
+              )}
+
               {authError && (
                 <p className="text-xs text-red-400">{authError}</p>
               )}
@@ -194,7 +227,7 @@ const Landing: React.FC = () => {
               <button 
                 type="submit"
                 className="w-full py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-xl mt-4 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (authMode === 'register' && !turnstileToken)}
               >
                 {isSubmitting ? '처리 중...' : authMode === 'login' ? '로그인' : '가입'}
               </button>
