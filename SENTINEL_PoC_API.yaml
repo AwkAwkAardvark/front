@@ -11,6 +11,7 @@ tags:
   - name: Dashboard
   - name: Partners
   - name: Decision
+  - name: Auth
 
 paths:
   /dashboard/summary:
@@ -347,6 +348,35 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ApiResponseId' }
 
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 로그인 (토큰 발급)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiResponseAuthLogin' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 로그아웃 (토큰 무효화)
+      security: [ bearerAuth: [] ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiResponseMessage' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -452,6 +482,21 @@ components:
           properties:
             id: { oneOf: [{ type: integer }, { type: string }] }
         error: { nullable: true }
+    ApiResponseAuthLogin:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/AuthLoginResponse' }
+        error: { nullable: true }
+    ApiResponseMessage:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            message: { type: string }
+        error: { nullable: true }
 
     # ---------- Common DTO ----------
     TooltipDto:
@@ -511,6 +556,21 @@ components:
           type: string
           nullable: true
           enum: [USER, ADMIN]
+
+    AuthLoginResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: seconds }
+        user: { $ref: '#/components/schemas/UserRefDto' }
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
 
     # ---------- Dashboard ----------
     DashboardSummaryResponse:
