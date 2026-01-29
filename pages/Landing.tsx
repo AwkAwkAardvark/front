@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, register } from '../src/services/auth';
 import TurnstileWidget from '../src/components/TurnstileWidget';
@@ -105,6 +105,13 @@ const Landing: React.FC = () => {
     setConfirmPassword('');
     setTurnstileToken('');
   };
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    setTurnstileToken(token);
+    if (token) {
+      setAuthError(null);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-slate-500 selection:text-white relative">

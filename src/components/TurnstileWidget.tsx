@@ -66,8 +66,13 @@ type TurnstileWidgetProps = {
 const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({ onVerify, siteKey, className }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const onVerifyRef = useRef(onVerify);
   const [error, setError] = useState<string | null>(null);
   const resolvedSiteKey = siteKey ?? import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    onVerifyRef.current = onVerify;
+  }, [onVerify]);
 
   useEffect(() => {
     let isActive = true;
@@ -92,12 +97,12 @@ const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({ onVerify, siteKey, cl
         const widgetId = window.turnstile.render(containerRef.current, {
           sitekey: resolvedSiteKey,
           callback: (token) => {
-            onVerify(token);
+            onVerifyRef.current(token);
             setError(null);
           },
           'error-callback': () => setError('Turnstile 인증에 실패했습니다.'),
           'expired-callback': () => {
-            onVerify('');
+            onVerifyRef.current('');
             setError('Turnstile 인증이 만료되었습니다. 다시 시도해 주세요.');
           },
         });
@@ -117,7 +122,7 @@ const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({ onVerify, siteKey, cl
       }
       widgetIdRef.current = null;
     };
-  }, [onVerify, resolvedSiteKey]);
+  }, [resolvedSiteKey]);
 
   return (
     <div className={className}>
