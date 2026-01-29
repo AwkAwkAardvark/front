@@ -1,37 +1,45 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AsyncState from '../components/common/AsyncState';
-import PartnerQuickViewDrawer from '../components/partners/PartnerQuickViewDrawer';
-import PartnersHeader from '../components/partners/PartnersHeader';
-import PartnersTable from '../components/partners/PartnersTable';
+import CompanyQuickViewDrawer from '../components/companies/CompanyQuickViewDrawer';
+import CompaniesHeader from '../components/companies/CompaniesHeader';
+import CompaniesTable from '../components/companies/CompaniesTable';
 import { logout } from '../services/auth';
-import { fetchPartnerDetail, fetchPartners } from '../services/partnersApi';
-import { usePartnersStore } from '../store/partnersStore';
-import { Partner, PartnerDetail } from '../types/partner';
+import { fetchCompanies, fetchCompanyOverview } from '../services/companiesApi';
+import { useCompaniesStore } from '../store/companiesStore';
+import { CompanyOverview, CompanySummary } from '../types/company';
 
-const PartnersPage: React.FC = () => {
+const USE_API = false;
+
+const CompaniesPage: React.FC = () => {
+  // TODO(API 연결):
+  // - 더미 데이터 제거
+  // - listCompanies API 연결
+  // - PROCESSING 상태 처리 로직 활성화
   const navigate = useNavigate();
-  const { partners, setPartners } = usePartnersStore();
+  const { companies, setCompanies } = useCompaniesStore();
   const [searchValue, setSearchValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<CompanySummary | null>(null);
   const [detailState, setDetailState] = useState<{
     isLoading: boolean;
     error: string | null;
-    data: PartnerDetail | null;
+    data: CompanyOverview | null;
   }>({
     isLoading: false,
     error: null,
     data: null,
   });
 
-  const loadPartners = async () => {
+  const loadCompanies = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchPartners();
-      setPartners(response);
+      const response = USE_API
+        ? await (await import('../api/companies')).listCompanies()
+        : await fetchCompanies();
+      setCompanies(response);
     } catch (err) {
       setError('협력사 목록을 불러오는 중 문제가 발생했습니다.');
     } finally {
@@ -40,11 +48,11 @@ const PartnersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    void loadPartners();
+    void loadCompanies();
   }, []);
 
   useEffect(() => {
-    if (!selectedPartner) {
+    if (!selectedCompany) {
       setDetailState({ isLoading: false, error: null, data: null });
       return;
     }
@@ -52,7 +60,9 @@ const PartnersPage: React.FC = () => {
     const fetchDetail = async () => {
       setDetailState({ isLoading: true, error: null, data: null });
       try {
-        const detail = await fetchPartnerDetail(selectedPartner.id);
+        const detail = USE_API
+          ? await (await import('../api/companies')).getCompanyOverview(selectedCompany.id)
+          : await fetchCompanyOverview(selectedCompany.id);
         setDetailState({ isLoading: false, error: null, data: detail });
       } catch (err) {
         setDetailState({ isLoading: false, error: '요약 정보를 불러오지 못했습니다.', data: null });
@@ -60,23 +70,23 @@ const PartnersPage: React.FC = () => {
     };
 
     void fetchDetail();
-  }, [selectedPartner]);
+  }, [selectedCompany]);
 
-  const filteredPartners = useMemo(() => {
+  const filteredCompanies = useMemo(() => {
     const keyword = searchValue.trim().toLowerCase();
     if (!keyword) {
-      return partners;
+      return companies;
     }
-    return partners.filter(
-      (partner) =>
-        partner.name.toLowerCase().includes(keyword) ||
-        partner.industry.toLowerCase().includes(keyword),
+    return companies.filter(
+      (company) =>
+        company.name.toLowerCase().includes(keyword) ||
+        company.sector.label.toLowerCase().includes(keyword),
     );
-  }, [partners, searchValue]);
+  }, [companies, searchValue]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
-      <PartnersHeader
+      <CompaniesHeader
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onAddCompanyClick={() => navigate('/companies/add')}
@@ -94,22 +104,22 @@ const PartnersPage: React.FC = () => {
       <AsyncState
         isLoading={isLoading}
         error={error}
-        empty={!isLoading && !error && filteredPartners.length === 0}
+        empty={!isLoading && !error && filteredCompanies.length === 0}
         emptyMessage={searchValue ? '검색 조건에 맞는 협력사가 없습니다.' : '등록된 협력사가 없습니다.'}
-        onRetry={loadPartners}
+        onRetry={loadCompanies}
       >
-        <PartnersTable partners={filteredPartners} onSelect={setSelectedPartner} />
+        <CompaniesTable companies={filteredCompanies} onSelect={setSelectedCompany} />
       </AsyncState>
 
-      <PartnerQuickViewDrawer
-        isOpen={Boolean(selectedPartner)}
+      <CompanyQuickViewDrawer
+        isOpen={Boolean(selectedCompany)}
         detail={detailState.data}
         isLoading={detailState.isLoading}
         error={detailState.error}
-        onClose={() => setSelectedPartner(null)}
+        onClose={() => setSelectedCompany(null)}
       />
     </div>
   );
 };
 
-export default PartnersPage;
+export default CompaniesPage;

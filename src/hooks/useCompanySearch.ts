@@ -22,10 +22,10 @@ export const useCompanySearch = () => {
     try {
       const response = await searchCompanies({
         name: name.trim() ? name.trim() : undefined,
-        code: code.trim() ? code.trim() : undefined
+        code: code.trim() ? code.trim() : undefined,
       });
       setItems(response.items);
-      setTotal(response.total);
+      setTotal(response.count);
     } catch (err) {
       setError('검색 실패');
       setItems([]);
@@ -49,6 +49,6 @@ export const useCompanySearch = () => {
     error,
     hasSearched,
     search,
-    clear
+    clear,
   };
 };

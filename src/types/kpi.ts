@@ -1,5 +1,5 @@
 export interface KpiTooltipContent {
   description: string;
-  interpretation?: string;
-  actionHint?: string;
+  interpretation?: string | null;
+  actionHint?: string | null;
 }

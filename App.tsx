@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
-import Partners from './pages/Partners';
-import PartnerDetail from './pages/PartnerDetail';
+import Companies from './pages/Companies';
+import CompanyDetail from './pages/CompanyDetail';
 import DecisionRoom from './pages/DecisionRoom';
 import Landing from './pages/Landing';
 import AddCompany from './pages/companies/add';
@@ -11,10 +10,10 @@ import AddCompany from './pages/companies/add';
 const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: string }) => {
   const location = useLocation();
   const isActive = location.pathname.startsWith(to);
-  
+
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       className={`flex items-center space-x-4 px-6 py-4 transition-all duration-300 ${
         isActive ? 'sidebar-active text-white bg-white/5' : 'text-slate-500 hover:text-slate-300'
       }`}
@@ -41,10 +40,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             <h1 className="text-xl font-bold tracking-widest serif text-white">SENTIENEL</h1>
           </Link>
         </div>
-        
+
         <nav className="flex-1">
           <SidebarItem to="/dashboard" icon="fa-th-large" label="대시보드" />
-          <SidebarItem to="/partners" icon="fa-handshake" label="협력사" />
+          <SidebarItem to="/companies" icon="fa-handshake" label="협력사" />
           <SidebarItem to="/decisions" icon="fa-balance-scale" label="의사결정" />
         </nav>
 
@@ -63,17 +62,15 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
       <main className="flex-1 relative overflow-y-auto">
         <div className="fixed inset-0 pointer-events-none opacity-40 z-0">
-           <iframe 
-              src='https://my.spline.design/retrofuturisticcircuitloop-tuqsKqc0Zul737nHijrJjx50/' 
-              frameBorder='0' 
-              width='100%' 
-              height='100%'
-              title="Spline Background"
-            ></iframe>
+          <iframe
+            src="https://my.spline.design/retrofuturisticcircuitloop-tuqsKqc0Zul737nHijrJjx50/"
+            frameBorder="0"
+            width="100%"
+            height="100%"
+            title="Spline Background"
+          ></iframe>
         </div>
-        <div className="relative z-10 p-10 max-w-7xl mx-auto">
-          {children}
-        </div>
+        <div className="relative z-10 p-10 max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
   );
@@ -84,10 +81,9 @@ const App: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
-        {/* Fixed missing children property error by explicitly wrapping route elements within DashboardLayout */}
         <Route path="/dashboard" element={<DashboardLayout children={<Dashboard />} />} />
-        <Route path="/partners" element={<DashboardLayout children={<Partners />} />} />
-        <Route path="/partners/:id" element={<DashboardLayout children={<PartnerDetail />} />} />
+        <Route path="/companies" element={<DashboardLayout children={<Companies />} />} />
+        <Route path="/companies/:id" element={<DashboardLayout children={<CompanyDetail />} />} />
         <Route path="/companies/add" element={<DashboardLayout children={<AddCompany />} />} />
         <Route path="/decisions" element={<DashboardLayout children={<DecisionRoom />} />} />
       </Routes>

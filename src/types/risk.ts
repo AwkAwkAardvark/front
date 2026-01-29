@@ -1,8 +1,8 @@
 export type RiskLevel = 'MIN' | 'WARN' | 'RISK';
 
-export interface PartnerQuarterRisk {
-  partnerId: string;
-  partnerName: string;
+export interface CompanyQuarterRisk {
+  companyId: string;
+  companyName: string;
   quarter: string; // '2025Q1' 형식
   riskLevel: RiskLevel;
 }

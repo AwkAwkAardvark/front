@@ -1,12 +1,12 @@
 import React from 'react';
 import { KpiTooltipContent } from '../../types/kpi';
-import { PartnerMetric, TrafficLight } from '../../types/partner';
+import { TrafficLight } from '../../utils/companySelectors';
 import IndicatorSignalList from '../kpi/IndicatorSignalList';
 import KpiCard from '../kpi/KpiCard';
 
 interface MetricsPanelProps {
-  metrics: PartnerMetric[];
-  signals: Array<{ label: string; status: TrafficLight; tooltip: KpiTooltipContent }>;
+  metrics: Array<{ label: string; value: string; tooltip?: KpiTooltipContent }>;
+  signals: Array<{ label: string; status: TrafficLight; tooltip?: KpiTooltipContent }>;
 }
 
 const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, signals }) => {

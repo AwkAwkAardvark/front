@@ -40,11 +40,11 @@ const SelectedCompanyPanel: React.FC<SelectedCompanyPanelProps> = ({
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">업종</p>
-              <p>{selectedCompany.industry}</p>
+              <p>{selectedCompany.sector?.label ?? '-'}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">지역</p>
-              <p>{selectedCompany.region}</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">ID</p>
+              <p>{selectedCompany.companyId ?? '-'}</p>
             </div>
           </div>
         </div>

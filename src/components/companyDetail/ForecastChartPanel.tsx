@@ -24,7 +24,7 @@ const ForecastChartPanel: React.FC<ForecastChartPanelProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
-              <linearGradient id="partnerScore" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="companyScore" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#93c5fd" stopOpacity={0.4} />
                 <stop offset="100%" stopColor="#0f172a" stopOpacity={0} />
               </linearGradient>
@@ -40,7 +40,7 @@ const ForecastChartPanel: React.FC<ForecastChartPanelProps> = ({ data }) => {
               }}
               cursor={{ stroke: '#94a3b8', strokeDasharray: '3 3' }}
             />
-            <Area type="monotone" dataKey="score" stroke="#93c5fd" fill="url(#partnerScore)" strokeWidth={2} />
+            <Area type="monotone" dataKey="score" stroke="#93c5fd" fill="url(#companyScore)" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

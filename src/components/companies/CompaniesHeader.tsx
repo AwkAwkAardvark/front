@@ -1,13 +1,13 @@
 import React from 'react';
 
-interface PartnersHeaderProps {
+interface CompaniesHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onAddCompanyClick: () => void;
   onLogout?: () => void;
 }
 
-const PartnersHeader: React.FC<PartnersHeaderProps> = ({
+const CompaniesHeader: React.FC<CompaniesHeaderProps> = ({
   searchValue,
   onSearchChange,
   onAddCompanyClick,
@@ -53,4 +53,4 @@ const PartnersHeader: React.FC<PartnersHeaderProps> = ({
   );
 };
 
-export default PartnersHeader;
+export default CompaniesHeader;
