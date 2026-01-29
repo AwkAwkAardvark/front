@@ -65,14 +65,14 @@ const SearchResultList: React.FC<SearchResultListProps> = ({
               <span>기업명</span>
               <span>코드</span>
               <span>업종</span>
-              <span>지역</span>
+              <span>ID</span>
             </div>
             <div className="divide-y divide-white/5">
               {items.map((company) => {
                 const isSelected = selectedId === company.companyId;
                 return (
                   <button
-                    key={company.companyId}
+                    key={company.code}
                     type="button"
                     onClick={() => onSelect(company)}
                     className={`grid w-full grid-cols-[2fr_1fr_1fr_1fr] items-center gap-2 px-4 py-4 text-left text-sm transition ${
@@ -91,8 +91,8 @@ const SearchResultList: React.FC<SearchResultListProps> = ({
                       )}
                     </span>
                     <span>{company.code}</span>
-                    <span>{company.industry}</span>
-                    <span>{company.region}</span>
+                    <span>{company.sector?.label ?? '-'}</span>
+                    <span>{company.companyId ?? '-'}</span>
                   </button>
                 );
               })}

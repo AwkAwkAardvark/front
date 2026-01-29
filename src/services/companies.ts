@@ -1,10 +1,29 @@
 import { httpGet, httpPost } from './http';
-import { CompanyDetail, CompanySearchResponse } from '../types/company';
+import {
+  CompanyConfirmRequest,
+  CompanyConfirmResult,
+  CompanyOverview,
+  CompanySearchResponse,
+} from '../types/company';
 
-export const searchCompanies = async (payload: { name?: string; code?: string }): Promise<CompanySearchResponse> => {
-  return httpPost<CompanySearchResponse, { name?: string; code?: string }>('/api/companies/search', payload);
+const buildSearchQuery = (payload: { name?: string; code?: string }) => {
+  const params = new URLSearchParams();
+  if (payload.name) params.append('name', payload.name);
+  if (payload.code) params.append('code', payload.code);
+  return params.toString();
 };
 
-export const getCompanyDetail = async (companyId: string): Promise<CompanyDetail> => {
-  return httpGet<CompanyDetail>(`/api/companies/${companyId}`);
+export const searchCompanies = async (payload: { name?: string; code?: string }): Promise<CompanySearchResponse> => {
+  const query = buildSearchQuery(payload);
+  return httpGet<CompanySearchResponse>(`/api/companies/search${query ? `?${query}` : ''}`);
+};
+
+export const confirmCompany = async (
+  payload: CompanyConfirmRequest,
+): Promise<CompanyConfirmResult> => {
+  return httpPost<CompanyConfirmResult, CompanyConfirmRequest>('/api/companies/confirm', payload);
+};
+
+export const getCompanyOverview = async (companyId: string): Promise<CompanyOverview> => {
+  return httpGet<CompanyOverview>(`/api/companies/${companyId}/overview`);
 };

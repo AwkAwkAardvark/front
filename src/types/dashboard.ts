@@ -1,61 +1,40 @@
+import { KpiCardDto, Sector } from './company';
+
 export type DashboardRange = '7d' | '30d' | '90d';
 
-export interface KpiValue {
-  value: number;
-  deltaPct?: number;
+export interface DashboardSummary {
+  range: string;
+  kpis: KpiCardDto[];
 }
 
-export type RiskIndexLabel = '최소' | '낮음' | '주의' | '높음';
-export type RiskIndexStatus = 'safe' | 'watch' | 'risk';
-
-export interface RiskIndexKpi {
-  label: RiskIndexLabel;
-  status: RiskIndexStatus;
-  deltaText?: string;
+export interface TimeSeriesPoint {
+  x: string;
+  y: number;
 }
 
-export interface NetworkHealthKpi {
-  valuePct: number;
-  deltaPct?: number;
+export interface TimeSeriesSeries {
+  name: string;
+  points: TimeSeriesPoint[];
 }
 
-export interface DashboardKpis {
-  activePartners: KpiValue;
-  riskIndex: RiskIndexKpi;
-  networkHealth: NetworkHealthKpi;
-}
-
-export interface TrendPoint {
-  period: string;
-  score: number;
+export interface TimeSeriesResponse {
+  range: string;
+  metric: string;
+  series: TimeSeriesSeries[];
 }
 
 export interface RiskSegment {
+  key: 'SAFE' | 'WARN' | 'RISK';
   label: string;
-  valuePct: number;
+  count: number;
+  ratio: number;
 }
 
 export interface RiskDistribution {
+  range?: string;
   segments: RiskSegment[];
-  avgRiskLabel: string;
-  topSector: string;
-}
-
-export interface KpiCard {
-  label: string;
-  valueText: string;
-  unit?: string;
-  deltaText?: string;
-  icon: string;
-  tone?: 'positive' | 'negative' | 'neutral';
-}
-
-export interface DashboardSummary {
-  range: DashboardRange;
-  kpis: DashboardKpis;
-  trend: {
-    points: TrendPoint[];
-    metricLabel?: string;
+  summary?: {
+    avgRiskLevel?: 'LOW' | 'MID' | 'HIGH';
+    topSector?: Sector;
   };
-  riskDistribution: RiskDistribution;
 }

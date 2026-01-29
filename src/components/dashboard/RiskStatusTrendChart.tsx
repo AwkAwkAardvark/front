@@ -8,10 +8,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { PartnerQuarterRisk } from '../../types/risk';
+import { CompanyQuarterRisk } from '../../types/risk';
 
 interface RiskStatusTrendChartProps {
-  records: PartnerQuarterRisk[];
+  records: CompanyQuarterRisk[];
 }
 
 const labelMap: Record<string, string> = {
@@ -99,7 +99,7 @@ const RiskStatusTrendChart: React.FC<RiskStatusTrendChartProps> = ({ records }) 
           </div>
         </div>
         <p className="text-xs text-slate-500">
-          분기별 파트너 위험 상태 비중 변화를 보여줍니다. ‘주의/위험’ 영역이 확대될수록 포트폴리오
+          분기별 협력사 위험 상태 비중 변화를 보여줍니다. ‘주의/위험’ 영역이 확대될수록 포트폴리오
           전반의 리스크가 증가하고 있음을 의미합니다.
         </p>
       </div>
@@ -174,7 +174,7 @@ const RiskStatusTrendChart: React.FC<RiskStatusTrendChartProps> = ({ records }) 
         )}
       </div>
       <p className="text-xs text-slate-500 mt-6">
-        주의·위험 비중이 급증한 분기는 외부 환경 변화나 특정 산업/파트너 그룹의 이상 여부를 함께
+        주의·위험 비중이 급증한 분기는 외부 환경 변화나 특정 산업/협력사 그룹의 이상 여부를 함께
         점검하세요.
       </p>
     </div>

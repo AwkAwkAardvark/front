@@ -1,23 +1,23 @@
 import React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import { RiskSegment } from '../../types/dashboard';
 
-type RiskKey = '위험' | '주의' | '정상';
-type RiskSlice = { name: RiskKey; value: number };
+type RiskKey = 'SAFE' | 'WARN' | 'RISK';
 
 interface RiskDistributionDonutProps {
-  data?: RiskSlice[];
+  segments?: RiskSegment[];
 }
 
-const MOCK_DATA: RiskSlice[] = [
-  { name: '정상', value: 62 },
-  { name: '주의', value: 25 },
-  { name: '위험', value: 13 },
+const MOCK_DATA: RiskSegment[] = [
+  { key: 'SAFE', label: '정상', count: 62, ratio: 0.62 },
+  { key: 'WARN', label: '주의', count: 25, ratio: 0.25 },
+  { key: 'RISK', label: '위험', count: 13, ratio: 0.13 },
 ];
 
 const COLORS: Record<RiskKey, string> = {
-  위험: '#ef4444',
-  주의: '#facc15',
-  정상: '#22c55e',
+  RISK: '#ef4444',
+  WARN: '#facc15',
+  SAFE: '#22c55e',
 };
 
 const RADIAN = Math.PI / 180;
@@ -35,7 +35,7 @@ const renderLabel = ({
   midAngle: number;
   outerRadius: number;
   percent: number;
-  name: RiskKey;
+  name: string;
 }) => {
   const radius = outerRadius + 18;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -56,8 +56,8 @@ const renderLabel = ({
   );
 };
 
-const RiskDistributionDonut: React.FC<RiskDistributionDonutProps> = ({ data }) => {
-  const chartData = data?.length ? data : MOCK_DATA;
+const RiskDistributionDonut: React.FC<RiskDistributionDonutProps> = ({ segments }) => {
+  const chartData = segments?.length ? segments : MOCK_DATA;
 
   return (
     <div className="h-[260px] w-full risk-donut-animate">
@@ -65,8 +65,8 @@ const RiskDistributionDonut: React.FC<RiskDistributionDonutProps> = ({ data }) =
         <PieChart>
           <Pie
             data={chartData}
-            dataKey="value"
-            nameKey="name"
+            dataKey="ratio"
+            nameKey="label"
             innerRadius={70}
             outerRadius={95}
             paddingAngle={4}
@@ -80,7 +80,7 @@ const RiskDistributionDonut: React.FC<RiskDistributionDonutProps> = ({ data }) =
             label={renderLabel}
           >
             {chartData.map((entry) => (
-              <Cell key={entry.name} fill={COLORS[entry.name]} />
+              <Cell key={entry.key} fill={COLORS[entry.key as RiskKey]} />
             ))}
           </Pie>
         </PieChart>

@@ -4,15 +4,22 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import KpiCards from '../components/dashboard/KpiCards';
 import RiskStatusTrendChart from '../components/dashboard/RiskStatusTrendChart';
 import RiskDistributionCard from '../components/dashboard/RiskDistributionCard';
-import { partnerRiskQuarterlyMock } from '../mocks/partnerRiskQuarterly.mock';
+import { companyRiskQuarterlyMock } from '../mocks/companyRiskQuarterly.mock';
+import { getMockRiskDistribution } from '../mocks/riskDistribution.mock';
 import { getStoredUser, logout } from '../services/auth';
 import { fetchDashboardSummary } from '../services/dashboardApi';
-import { DashboardRange, DashboardSummary } from '../types/dashboard';
+import { DashboardRange, DashboardSummary, RiskDistribution } from '../types/dashboard';
+
+const USE_API = false;
 
 const DashboardPage: React.FC = () => {
+  // TODO(API 연결):
+  // - 더미 데이터 제거
+  // - getDashboardSummary API 연결
   const navigate = useNavigate();
   const [range, setRange] = useState<DashboardRange>('30d');
   const [data, setData] = useState<DashboardSummary | null>(null);
+  const [riskDistribution, setRiskDistribution] = useState<RiskDistribution | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
   const [userName] = useState(() => getStoredUser()?.name ?? 'id');
@@ -22,8 +29,11 @@ const DashboardPage: React.FC = () => {
     setIsError(false);
 
     try {
-      const response = await fetchDashboardSummary(range);
+      const response = USE_API
+        ? await (await import('../api/companies')).getDashboardSummary(range)
+        : await fetchDashboardSummary(range);
       setData(response);
+      setRiskDistribution(getMockRiskDistribution(range));
     } catch (error) {
       setIsError(true);
     } finally {
@@ -36,9 +46,9 @@ const DashboardPage: React.FC = () => {
   }, [loadSummary]);
 
   const emptyState = useMemo(() => {
-    if (!data) return false;
-    return data.riskDistribution.segments.length === 0 && partnerRiskQuarterlyMock.length === 0;
-  }, [data]);
+    if (!riskDistribution) return false;
+    return riskDistribution.segments.length === 0 && companyRiskQuarterlyMock.length === 0;
+  }, [riskDistribution]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -94,9 +104,9 @@ const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && !isError && data && (
+      {!isLoading && !isError && data && riskDistribution && (
         <div>
-          <KpiCards kpis={data.kpis} riskRecords={partnerRiskQuarterlyMock} />
+          <KpiCards kpis={data.kpis} riskRecords={companyRiskQuarterlyMock} />
 
           {emptyState && (
             <div className="glass-panel p-10 rounded-2xl text-center text-slate-400 mb-10">
@@ -106,8 +116,8 @@ const DashboardPage: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <RiskStatusTrendChart records={partnerRiskQuarterlyMock} />
-            <RiskDistributionCard distribution={data.riskDistribution} />
+            <RiskStatusTrendChart records={companyRiskQuarterlyMock} />
+            <RiskDistributionCard distribution={riskDistribution} />
           </div>
         </div>
       )}

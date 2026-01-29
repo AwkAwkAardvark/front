@@ -5,20 +5,24 @@ import SelectedCompanyPanel from '../../components/companies/SelectedCompanyPane
 import JsonPreview from '../../components/common/JsonPreview';
 import { useCompanySearch } from '../../hooks/useCompanySearch';
 import { useCompanySelection } from '../../hooks/useCompanySelection';
-import { getCompanyDetail } from '../../services/companies';
-import { runModel } from '../../services/model';
-import { CompanyDetail, CompanySearchItem } from '../../types/company';
-import { ModelRunRequest, ModelRunResponse } from '../../types/model';
+import { confirmCompany, getCompanyOverview } from '../../services/companies';
+import { CompanyConfirmResult, CompanyOverview, CompanySearchItem } from '../../types/company';
+
+const USE_API = false;
 
 const AddCompanyPage: React.FC = () => {
+  // TODO(API 연결):
+  // - 더미 데이터 제거
+  // - searchCompanies API 연결
+  // - confirmCompany API 연결
+  // - PROCESSING 상태 처리 로직 활성화
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
-  const [companyDetail, setCompanyDetail] = useState<CompanyDetail | null>(null);
-  const [modelRequest, setModelRequest] = useState<ModelRunRequest | null>(null);
-  const [modelResponse, setModelResponse] = useState<ModelRunResponse | null>(null);
+  const [confirmResult, setConfirmResult] = useState<CompanyConfirmResult | null>(null);
+  const [companyOverview, setCompanyOverview] = useState<CompanyOverview | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
   const { items, total, isLoading, error, hasSearched, search, clear } = useCompanySearch();
@@ -27,9 +31,8 @@ const AddCompanyPage: React.FC = () => {
   const resetConfirmation = () => {
     setConfirmError(null);
     setCompletionMessage(null);
-    setCompanyDetail(null);
-    setModelRequest(null);
-    setModelResponse(null);
+    setConfirmResult(null);
+    setCompanyOverview(null);
   };
 
   const handleSearch = async () => {
@@ -71,25 +74,27 @@ const AddCompanyPage: React.FC = () => {
     setCompletionMessage(null);
 
     try {
-      const detail = await getCompanyDetail(selectedCompany.companyId);
-      const requestPayload: ModelRunRequest = {
-        companyId: detail.companyId,
-        companyName: detail.name,
-        requestId: `req-${Date.now().toString(36)}`,
-        scenario: 'baseline',
-        horizonMonths: 12,
-        requestedBy: 'admin@sentinel.ai'
+      const confirmPayload = {
+        companyId: selectedCompany.companyId,
+        code: selectedCompany.code,
+        name: selectedCompany.name,
       };
-      const responsePayload = await runModel(requestPayload);
 
-      setCompanyDetail(detail);
-      setModelRequest(requestPayload);
-      setModelResponse(responsePayload);
-      setCompletionMessage('완료: 모델 요청이 큐에 등록되었습니다.');
+      const result = USE_API
+        ? await (await import('../../api/companies')).confirmCompany(confirmPayload)
+        : await confirmCompany(confirmPayload);
+      setConfirmResult(result);
 
-      console.log('Company detail:', detail);
-      console.log('Model run request:', requestPayload);
-      console.log('Model run response:', responsePayload);
+      if (result.modelStatus === 'PROCESSING') {
+        setCompletionMessage('분석이 진행 중입니다. 완료되면 다시 확인해 주세요.');
+        // TODO(API 연결): PROCESSING 상태일 때 폴링/재요청 로직 추가
+      } else {
+        const overview = USE_API
+          ? await (await import('../../api/companies')).getCompanyOverview(result.companyId)
+          : await getCompanyOverview(result.companyId);
+        setCompanyOverview(overview);
+        setCompletionMessage('완료: 기존 분석 결과를 불러왔습니다.');
+      }
     } catch (err) {
       setConfirmError('확인 단계 처리에 실패했습니다. 다시 시도해 주세요.');
     } finally {
@@ -137,11 +142,10 @@ const AddCompanyPage: React.FC = () => {
         onSelect={handleSelect}
       />
 
-      {(companyDetail || modelRequest || modelResponse) && (
-        <div className="grid gap-4 lg:grid-cols-3">
-          {companyDetail && <JsonPreview title="Company Detail" data={companyDetail} />}
-          {modelRequest && <JsonPreview title="Model Run Request" data={modelRequest} />}
-          {modelResponse && <JsonPreview title="Model Run Response" data={modelResponse} />}
+      {(confirmResult || companyOverview) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {confirmResult && <JsonPreview title="Company Confirm Result" data={confirmResult} />}
+          {companyOverview && <JsonPreview title="Company Overview" data={companyOverview} />}
         </div>
       )}
     </div>

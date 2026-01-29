@@ -1,10 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { PartnerDetail } from '../../types/partner';
+import { CompanyOverview, CompanySummary } from '../../types/company';
+import {
+  formatCompanyRevenue,
+  getCompanyHealthScore,
+  getCompanyStatusLabel,
+  getCompanyRevenue,
+  getMetricValue,
+} from '../../utils/companySelectors';
+import { getCompanyTimeline } from '../../mocks/companies.mock';
 
-interface PartnerQuickViewDrawerProps {
+interface CompanyQuickViewDrawerProps {
   isOpen: boolean;
-  detail?: PartnerDetail | null;
+  detail?: CompanyOverview | null;
   isLoading: boolean;
   error?: string | null;
   onClose: () => void;
@@ -16,7 +24,7 @@ const toneColor: Record<string, string> = {
   risk: 'bg-rose-400',
 };
 
-const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
+const CompanyQuickViewDrawer: React.FC<CompanyQuickViewDrawerProps> = ({
   isOpen,
   detail,
   isLoading,
@@ -26,6 +34,23 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
   if (!isOpen) {
     return null;
   }
+
+  const summary = detail?.company;
+  const timeline = summary ? getCompanyTimeline(summary.id) : [];
+  const summaryAsPreview: CompanySummary | null = summary
+    ? {
+        id: summary.id,
+        name: summary.name,
+        sector: summary.sector,
+        overallScore: summary.overallScore,
+        riskLevel: summary.riskLevel,
+      }
+    : null;
+  const healthScore = summaryAsPreview ? getCompanyHealthScore(summaryAsPreview) : 0;
+  const revenueValue =
+    getMetricValue(detail?.keyMetrics, 'ANNUAL_REVENUE') ??
+    (summaryAsPreview ? getCompanyRevenue(summaryAsPreview) : 0);
+  const statusLabel = summary ? getCompanyStatusLabel(summary.riskLevel) : '—';
 
   return (
     <>
@@ -39,9 +64,9 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
           <div>
             <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">협력사 요약</p>
             <h3 className="mt-2 text-2xl font-light text-white">
-              {detail?.partner.name ?? '협력사 정보'}
+              {summary?.name ?? '협력사 정보'}
             </h3>
-            <p className="text-xs text-slate-500">{detail?.partner.industry}</p>
+            <p className="text-xs text-slate-500">{summary?.sector.label}</p>
           </div>
           <button
             type="button"
@@ -64,19 +89,17 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
           </div>
         )}
 
-        {!isLoading && !error && detail && (
+        {!isLoading && !error && summary && (
           <div className="space-y-10">
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">네트워크 건강도</span>
-                <div className="mt-3 text-2xl font-light text-white">
-                  {detail.summary.networkHealth}%
-                </div>
+                <div className="mt-3 text-2xl font-light text-white">{healthScore}%</div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">연 매출</span>
                 <div className="mt-3 text-2xl font-light text-white">
-                  {detail.summary.annualRevenue.toLocaleString('ko-KR')}억
+                  {formatCompanyRevenue(revenueValue)}
                 </div>
               </div>
             </div>
@@ -84,13 +107,11 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
             <div>
               <h4 className="text-[11px] uppercase tracking-[0.3em] text-slate-500">주요 이력</h4>
               <div className="mt-6 space-y-6">
-                {detail.summary.timeline.map((item, index) => (
+                {timeline.map((item, index) => (
                   <div key={`${item.date}-${index}`} className="flex gap-4">
                     <div className="flex flex-col items-center">
                       <span className={`mt-1 h-2 w-2 rounded-full ${toneColor[item.tone]}`} />
-                      {index < detail.summary.timeline.length - 1 && (
-                        <span className="mt-2 h-full w-px bg-white/10" />
-                      )}
+                      {index < timeline.length - 1 && <span className="mt-2 h-full w-px bg-white/10" />}
                     </div>
                     <div>
                       <p className="text-sm text-slate-200">{item.title}</p>
@@ -103,7 +124,7 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
 
             <div className="space-y-3">
               <Link
-                to={`/partners/${detail.partner.id}`}
+                to={`/companies/${summary.id}`}
                 className="flex w-full items-center justify-center rounded-full bg-white px-6 py-4 text-xs font-bold uppercase tracking-[0.3em] text-slate-900 transition hover:opacity-90"
               >
                 전체 분석 보기 →
@@ -115,6 +136,10 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
                 자료 업데이트 요청
               </button>
             </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-slate-400">
+              현재 상태: {statusLabel}
+            </div>
           </div>
         )}
       </aside>
@@ -122,4 +147,4 @@ const PartnerQuickViewDrawer: React.FC<PartnerQuickViewDrawerProps> = ({
   );
 };
 
-export default PartnerQuickViewDrawer;
+export default CompanyQuickViewDrawer;

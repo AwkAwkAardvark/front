@@ -192,7 +192,7 @@ const DecisionRoom: React.FC = () => {
                 <h3 className="text-2xl font-light serif text-white mb-2">Strategic Bulletins</h3>
                 <p className="text-xs text-slate-500 uppercase tracking-widest">
                   {bulletinMode === 'active'
-                    ? 'Active directives for partner operations'
+                    ? 'Active directives for company operations'
                     : 'Archived directives & advisories'}
                 </p>
               </div>
@@ -215,7 +215,7 @@ const DecisionRoom: React.FC = () => {
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-light serif text-white mb-2">Partner Q&amp;A</h3>
+                <h3 className="text-2xl font-light serif text-white mb-2">Company Q&amp;A</h3>
                 <p className="text-xs text-slate-500 uppercase tracking-widest">
                   Collaborative threads with operations and compliance.
                 </p>

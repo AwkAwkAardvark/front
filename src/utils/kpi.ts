@@ -1,132 +1,103 @@
-import { PartnerQuarterRisk, RiskLevel } from '../types/risk';
+import { CompanyQuarterRisk, RiskLevel } from '../types/risk';
 
-const RISK_LEVELS: RiskLevel[] = ['WARN', 'RISK'];
+const sortByQuarter = (a: CompanyQuarterRisk, b: CompanyQuarterRisk): number =>
+  a.quarter.localeCompare(b.quarter);
 
-const getQuarterIndex = (quarter: string): number => {
-  const match = quarter.match(/(\d{4})Q([1-4])/);
-  if (!match) return 0;
-  const year = Number(match[1]);
-  const q = Number(match[2]);
-  return year * 4 + q;
+const uniqueSortedQuarters = (records: CompanyQuarterRisk[]): string[] => {
+  const quarters = new Set(records.map((record) => record.quarter));
+  return Array.from(quarters).sort();
 };
 
-const isRiskLevel = (riskLevel: RiskLevel): boolean => RISK_LEVELS.includes(riskLevel);
+const computeRiskRunLengths = (records: CompanyQuarterRisk[]): number[] => {
+  const runLengths: number[] = [];
+  let currentRun = 0;
 
-const sortByQuarter = (a: PartnerQuarterRisk, b: PartnerQuarterRisk): number =>
-  getQuarterIndex(a.quarter) - getQuarterIndex(b.quarter);
-
-const uniqueSortedQuarters = (records: PartnerQuarterRisk[]): string[] => {
-  const quarters = Array.from(new Set(records.map((record) => record.quarter)));
-  return quarters.sort((a, b) => getQuarterIndex(a) - getQuarterIndex(b));
-};
-
-const average = (values: number[]): number =>
-  values.reduce((sum, value) => sum + value, 0) / values.length;
-
-const median = (values: number[]): number => {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-};
-
-const aggregateRuns = (values: number[], mode: 'average' | 'median' = 'average'): number =>
-  mode === 'median' ? median(values) : average(values);
-
-export const computeDwellRunsByPartner = (records: PartnerQuarterRisk[]): number[] => {
-  const runs: number[] = [];
-  const recordsByPartner = records.reduce<Record<string, PartnerQuarterRisk[]>>((acc, record) => {
-    if (!acc[record.partnerId]) {
-      acc[record.partnerId] = [];
-    }
-    acc[record.partnerId].push(record);
-    return acc;
-  }, {});
-
-  Object.values(recordsByPartner).forEach((partnerRecords) => {
-    const sortedRecords = [...partnerRecords].sort(sortByQuarter);
-    let currentRun = 0;
-    let previousIndex: number | null = null;
-    let previousWasRisk = false;
-
-    sortedRecords.forEach((record) => {
-      const currentIndex = getQuarterIndex(record.quarter);
-      const consecutive = previousIndex !== null && currentIndex === previousIndex + 1;
-      const risk = isRiskLevel(record.riskLevel);
-
-      if (risk) {
-        if (currentRun > 0 && previousWasRisk && consecutive) {
-          currentRun += 1;
-        } else {
-          if (currentRun > 0) {
-            runs.push(currentRun);
-          }
-          currentRun = 1;
-        }
-      } else if (currentRun > 0) {
-        runs.push(currentRun);
-        currentRun = 0;
-      }
-
-      previousIndex = currentIndex;
-      previousWasRisk = risk;
-    });
-
-    if (currentRun > 0) {
-      runs.push(currentRun);
+  records.forEach((record) => {
+    if (record.riskLevel === 'WARN' || record.riskLevel === 'RISK') {
+      currentRun += 1;
+    } else if (currentRun > 0) {
+      runLengths.push(currentRun);
+      currentRun = 0;
     }
   });
 
-  return runs;
+  if (currentRun > 0) {
+    runLengths.push(currentRun);
+  }
+
+  return runLengths;
 };
 
-export const computeDwellTimeAvg = (
-  records: PartnerQuarterRisk[],
-  windowQuarters?: string[],
-  mode: 'average' | 'median' = 'average',
-): number | null => {
-  const scopedRecords = windowQuarters
-    ? records.filter((record) => windowQuarters.includes(record.quarter))
-    : records;
+export const computeDwellRunsByCompany = (records: CompanyQuarterRisk[]): number[] => {
+  const recordsByCompany = records.reduce<Record<string, CompanyQuarterRisk[]>>((acc, record) => {
+    if (!acc[record.companyId]) {
+      acc[record.companyId] = [];
+    }
+    acc[record.companyId].push(record);
+    return acc;
+  }, {});
 
-  if (scopedRecords.length === 0) {
-    return null;
-  }
+  const runLengths: number[] = [];
+  Object.values(recordsByCompany).forEach((companyRecords) => {
+    const sortedRecords = [...companyRecords].sort(sortByQuarter);
+    runLengths.push(...computeRiskRunLengths(sortedRecords));
+  });
 
-  const runs = computeDwellRunsByPartner(scopedRecords);
-  if (runs.length === 0) {
-    return 0;
-  }
-
-  return aggregateRuns(runs, mode);
+  return runLengths;
 };
 
 export const getRecentQuarterWindows = (
-  records: PartnerQuarterRisk[],
+  records: CompanyQuarterRisk[],
   windowSize = 4,
 ): { currentWindow: string[]; previousWindow: string[] } => {
   const quarters = uniqueSortedQuarters(records);
   const currentWindow = quarters.slice(-windowSize);
-  const previousWindow = quarters.slice(-windowSize * 2, -windowSize);
+  const previousWindow = quarters.slice(-(windowSize * 2), -windowSize);
 
   return { currentWindow, previousWindow };
 };
 
+const average = (values: number[]): number | null => {
+  if (values.length === 0) return null;
+  const sum = values.reduce((acc, value) => acc + value, 0);
+  return sum / values.length;
+};
+
+const filterRecordsByQuarters = (records: CompanyQuarterRisk[], window: string[]) =>
+  records.filter((record) => window.includes(record.quarter));
+
 export const computeDwellTimeDelta = (
-  records: PartnerQuarterRisk[],
+  records: CompanyQuarterRisk[],
   currentWindow: string[],
   previousWindow: string[],
-  mode: 'average' | 'median' = 'average',
 ): { value: number | null; delta: number | null } => {
-  const currentValue = computeDwellTimeAvg(records, currentWindow, mode);
-  const previousValue = computeDwellTimeAvg(records, previousWindow, mode);
+  if (records.length === 0) return { value: null, delta: null };
 
-  if (currentValue === null) {
-    return { value: null, delta: null };
+  const currentRecords = filterRecordsByQuarters(records, currentWindow);
+  const previousRecords = filterRecordsByQuarters(records, previousWindow);
+
+  const currentRuns = computeDwellRunsByCompany(currentRecords);
+  const previousRuns = computeDwellRunsByCompany(previousRecords);
+
+  const currentAverage = average(currentRuns);
+  const previousAverage = average(previousRuns);
+
+  if (currentAverage === null || previousAverage === null) {
+    return { value: currentAverage, delta: null };
   }
 
-  if (previousValue === null) {
-    return { value: currentValue, delta: null };
-  }
+  return {
+    value: currentAverage,
+    delta: currentAverage - previousAverage,
+  };
+};
 
-  return { value: currentValue, delta: currentValue - previousValue };
+export const getRiskLevelSummary = (records: CompanyQuarterRisk[]): Record<RiskLevel, number> => {
+  return records.reduce<Record<RiskLevel, number>>(
+    (acc, record) => {
+      acc[record.riskLevel] += 1;
+      return acc;
+    },
+    { MIN: 0, WARN: 0, RISK: 0 },
+  );
 };
