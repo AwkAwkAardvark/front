@@ -93,7 +93,7 @@ const Landing: React.FC = () => {
       }
       navigate('/dashboard');
     } catch (error) {
-      setAuthError(isRegister ? '회원가입에 실패했습니다. 다시 시도해주세요.' : '로그인에 실패했습니다. 다시 시도해주세요.');
+      setAuthError(isRegister ? '회원가입에 실패했습니다. 다시 시도해주세요.' : '이메일이나 비밀번호가 올바르지 않습니다.');
     } finally {
       setIsSubmitting(false);
     }
