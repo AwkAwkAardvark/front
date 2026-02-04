@@ -133,7 +133,7 @@ const Landing: React.FC = () => {
 
       if (isDuplicateEmail) {
         setAuthError(null);
-        setDuplicateEmailError('이미 사용 중인 이메일입니다.');
+        setDuplicateEmailError('중복된 이메일입니다');
         return;
       } else {
         if (Object.keys(fieldErrors).length > 0) {
@@ -217,7 +217,7 @@ const Landing: React.FC = () => {
                   )}</div>
               )}
               
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">이메일</label>
                 <input 
                   type="email" 
@@ -234,12 +234,19 @@ const Landing: React.FC = () => {
                   placeholder="이메일을 입력해 주세요"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.email)}
+                  aria-describedby={duplicateEmailError ? 'duplicate-email-tooltip' : undefined}
                 />
+                {duplicateEmailError && (
+                  <div
+                    id="duplicate-email-tooltip"
+                    role="tooltip"
+                    className="absolute right-2 -top-2 -translate-y-full rounded-lg bg-red-500 px-3 py-2 text-[10px] font-bold text-black shadow-lg"
+                  >
+                    중복된 이메일입니다
+                  </div>
+                )}
                 {errors.email && (
                   <p className="text-xs text-red-400">{errors.email}</p>
-                )}
-                {duplicateEmailError && (
-                  <p className="text-xs text-red-400">{duplicateEmailError}</p>
                 )}
                 {serverFieldErrors.email && (
                   <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.email}</div>
