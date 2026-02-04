@@ -46,7 +46,8 @@ const DecisionRoom: React.FC = () => {
   const [composerError, setComposerError] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [hasLoadedQa, setHasLoadedQa] = useState<boolean>(false);
-  const role = getStoredUser()?.role?.toUpperCase();
+  const currentUser = getStoredUser();
+  const role = currentUser?.role?.toUpperCase();
   const isAdmin = role === 'ADMIN';
 
   const loadBulletins = useCallback(async () => {
@@ -94,6 +95,10 @@ const DecisionRoom: React.FC = () => {
   const filteredQaPosts = useMemo(() => {
     const searchLower = qaSearch.trim().toLowerCase();
     return qaPosts.filter((post) => {
+      if (!isAdmin) {
+        if (!currentUser?.id) return false;
+        if (String(post.userId) !== String(currentUser.id)) return false;
+      }
       const statusMatch = qaStatusFilter === 'all' || post.status === qaStatusFilter;
       if (!statusMatch) return false;
       if (isAdmin && qaAuthorFilter !== 'all' && post.author !== qaAuthorFilter) {
@@ -110,7 +115,7 @@ const DecisionRoom: React.FC = () => {
         inReplies
       );
     });
-  }, [isAdmin, qaAuthorFilter, qaPosts, qaSearch, qaStatusFilter]);
+  }, [currentUser?.id, isAdmin, qaAuthorFilter, qaPosts, qaSearch, qaStatusFilter]);
 
   const qaAuthors = useMemo(() => {
     const authorMap = new Map<string, string>();
