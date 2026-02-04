@@ -189,8 +189,8 @@ const Landing: React.FC = () => {
     <div className="min-h-screen bg-[#050505] text-white selection:bg-slate-500 selection:text-white relative">
       <SuccessModal
         open={showSignupSuccess}
-        title="회원가입 완료"
-        message="회원가입이 완료되었습니다. 로그인하여 계속 진행해 주세요."
+        title="회원가입 이메일 인증"
+        message="입력하신 주소로 이메일을 보냈습니다. 확인하고 인증해주세요."
         confirmLabel="로그인 하러가기"
         onConfirm={handleSignupSuccessConfirm}
       />
