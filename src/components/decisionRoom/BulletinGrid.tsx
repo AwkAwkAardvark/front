@@ -47,7 +47,7 @@ const BulletinGrid: React.FC<BulletinGridProps> = ({ bulletins, onOpen }) => {
           <div className="mt-6 pt-4 border-t border-white/10 text-[10px] text-slate-500 uppercase tracking-widest flex items-center justify-between">
             <span>{bulletin.issuedBy}</span>
             <span className="flex items-center gap-2 text-slate-400 group-hover:text-white">
-              READ FULL BULLETIN <i className="fas fa-arrow-right text-[9px]"></i>
+              READ FULL NOTICE <i className="fas fa-arrow-right text-[9px]"></i>
             </span>
           </div>
         </article>

@@ -20,7 +20,7 @@ const DecisionRoomHeader: React.FC<DecisionRoomHeaderProps> = ({
     <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
       <div>
         <h2 className="text-4xl font-light serif text-white mb-2">Decision Room</h2>
-        <p className="text-slate-400">Q&amp;A and official company directives.</p>
+        <p className="text-slate-400">Q&amp;A and official company notices.</p>
       </div>
 
       <div className="flex flex-col gap-3 items-start md:items-end">
@@ -35,7 +35,7 @@ const DecisionRoomHeader: React.FC<DecisionRoomHeaderProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Bulletins
+              Notices
             </button>
             <button
               type="button"
@@ -71,7 +71,7 @@ const DecisionRoomHeader: React.FC<DecisionRoomHeaderProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Bulletins
+              Notices
             </button>
             <button
               type="button"
@@ -82,7 +82,7 @@ const DecisionRoomHeader: React.FC<DecisionRoomHeaderProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Bulletin Archive
+              Notice Archive
             </button>
           </div>
         )}

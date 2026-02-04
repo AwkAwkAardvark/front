@@ -237,7 +237,7 @@ const DecisionRoom: React.FC = () => {
           <div className="glass-panel rounded-3xl p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-2xl font-light serif text-white mb-2">Strategic Bulletins</h3>
+                <h3 className="text-2xl font-light serif text-white mb-2">Strategic Notices</h3>
                 <p className="text-xs text-slate-500 uppercase tracking-widest">
                   {bulletinMode === 'active'
                     ? 'Active directives for company operations'
