@@ -238,7 +238,7 @@ const Landing: React.FC = () => {
                     role="alert"
                     className="text-xs text-red-400"
                   >
-                    중복된 이메일입니다
+                    {duplicateEmailError}
                   </p>
                 )}
                 {errors.email && (
