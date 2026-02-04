@@ -8,7 +8,7 @@ import RiskDistributionCard from '../components/dashboard/RiskDistributionCard';
 import { getDashboardSummary } from '../api/companies';
 import { companyRiskQuarterlyMock } from '../mocks/companyRiskQuarterly.mock';
 import { getStoredUser, logout } from '../services/auth';
-import { DashboardRange, DashboardSummary, RiskDistribution } from '../types/dashboard';
+import { DashboardSummary, RiskDistribution } from '../types/dashboard';
 
 const buildRiskDistribution = (summary: DashboardSummary): RiskDistribution => {
   const { NORMAL, CAUTION, RISK } = summary.riskStatusDistribution;
@@ -30,7 +30,6 @@ const DashboardPage: React.FC = () => {
   // - 더미 데이터 제거
   // - getDashboardSummary API 연결
   const navigate = useNavigate();
-  const [range, setRange] = useState<DashboardRange>('30d');
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [riskDistribution, setRiskDistribution] = useState<RiskDistribution | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -42,7 +41,7 @@ const DashboardPage: React.FC = () => {
     setIsError(false);
 
     try {
-      const response = await getDashboardSummary(range);
+      const response = await getDashboardSummary();
       setData(response);
       setRiskDistribution(buildRiskDistribution(response));
     } catch (error) {
@@ -50,7 +49,7 @@ const DashboardPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [range]);
+  }, []);
 
   useEffect(() => {
     loadSummary();
@@ -74,12 +73,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="animate-in fade-in duration-700">
-      <DashboardHeader
-        range={range}
-        onChangeRange={setRange}
-        onLogout={handleLogout}
-        userName={userName}
-      />
+      <DashboardHeader onLogout={handleLogout} userName={userName} />
 
       {isLoading && (
         <div className="space-y-8">
@@ -123,7 +117,7 @@ const DashboardPage: React.FC = () => {
           {emptyState && (
             <div className="glass-panel p-10 rounded-2xl text-center text-slate-400 mb-10">
               <div className="text-lg text-white mb-2">표시할 데이터가 없습니다.</div>
-              <p className="text-sm text-slate-500">기간을 변경하거나 데이터가 준비될 때까지 기다려주세요.</p>
+              <p className="text-sm text-slate-500">데이터가 준비될 때까지 잠시만 기다려주세요.</p>
             </div>
           )}
 

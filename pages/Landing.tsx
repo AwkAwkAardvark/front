@@ -394,8 +394,6 @@ const Landing: React.FC = () => {
           </div>
           
           <div className="hidden md:flex items-center space-x-10 text-[10px] uppercase tracking-[0.2em] font-medium text-slate-400">
-            <a href="#platform" className="hover:text-white transition-colors">플랫폼</a>
-            <a href="#network" className="hover:text-white transition-colors">네트워크</a>
             {isAuthenticated ? (
               <button
                 onClick={handleLogout}
@@ -445,56 +443,6 @@ const Landing: React.FC = () => {
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-4 opacity-60">
                <span className="text-[9px] uppercase tracking-[0.5em] text-white">SCROLL</span>
            <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent"></div>
-        </div>
-      </section>
-
-      {/* Platform Section */}
-      <section id="platform" className="py-32 px-10 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-16 mb-24 items-end">
-          <div className="md:col-span-6">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-6 flex items-center">
-              <span className="w-2 h-2 bg-slate-400 mr-2"></span> STRAGITY / INSIGHT
-            </div>
-            <h2 className="text-5xl md:text-6xl font-light leading-[1.1] text-white mb-0">
-              통합, 리스크 AI로<br/>
-              비즈니스를 <br/>
-              <span className="text-slate-500 italic">선도합니다.</span>
-            </h2>
-          </div>
-          <div className="md:col-span-6">
-            <p className="text-lg text-slate-400 font-light leading-relaxed mb-8 ">
-              불확실성이 커지는 지금,<br />
-              <br />
-              SENTINEL은 기업의 복잡한 위험 신호를 정밀하게 탐지하고 의사결정을 지원합니다.
-            </p>
-            <button className="group flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white">
-              <span className="bg-white/10 p-4 rounded-full group-hover:bg-white group-hover:text-black transition-all">
-                <i className="fas fa-arrow-right"></i>
-              </span>
-              <span>플랫폼 더 알아보기</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { num: '01.', title: '리스크 분석', desc: '분산된 지표와 데이터를 결합해 기업의 현재 위험을 정교하게 측정합니다.', icon: 'fa-microscope' },
-            { num: '02.', title: '통합 인사이트', desc: '복잡한 기업 정보를 결합해 의사결정 시간을 획기적으로 줄입니다.', icon: 'fa-vial' },
-            { num: '03.', title: '예측형 AI', desc: '과거와 현재 데이터를 기반으로 향후 분기 리스크를 예측합니다.', icon: 'fa-brain' },
-          ].map((feat, i) => (
-            <div key={i} className="p-10 border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-500 group">
-              <div className="mb-12 flex justify-between items-start">
-                 <div className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center text-slate-500 group-hover:text-white group-hover:border-white/30 transition-all">
-                   <i className={`fas ${feat.icon}`}></i>
-                 </div>
-                 <span className="text-[10px] text-slate-600 font-mono tracking-tighter">{feat.num}</span>
-              </div>
-              <h3 className="text-xl font-medium text-white mb-4 uppercase tracking-wider">{feat.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed group-hover:text-slate-300 transition-colors">
-                {feat.desc}
-              </p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -576,7 +524,7 @@ const Landing: React.FC = () => {
             <img src="/img/robot.jpg" className="w-full h-full object-cover" />
          </div>
          <div className="relative z-10 max-w-3xl">
-            <h2 className="text-4xl md:text-5xl serif leading-tight mb-12">우리의 기업 네트워크는 불확실성을<br/>데이터 인텔리전스로<br/>해결합니다.</h2>
+            <h2 className="text-4xl md:text-5xl serif leading-tight mb-12">우리의 기업 데이터는 불확실성을<br/>데이터 인텔리전스로<br/>해결합니다.</h2>
             <button 
               onClick={() => { setAuthMode('register'); setShowAuth(true); }}
               className="inline-flex items-center space-x-4 group"
@@ -594,7 +542,6 @@ const Landing: React.FC = () => {
              <div className="md:col-span-4"><p className="mb-4">© 2026 SENTINEL. All rights reserved.</p></div>
              <div className="md:col-span-2 flex flex-col space-y-2">
                 <span className="text-white font-bold mb-2">둘러보기</span>
-                <a href="#" className="hover:text-white transition-colors">플랫폼</a>
                 <a href="#" className="hover:text-white transition-colors">회사</a>
                 <a href="#" className="hover:text-white transition-colors">뉴스룸</a>
              </div>

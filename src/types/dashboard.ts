@@ -1,10 +1,8 @@
 // 대시보드 요약 데이터 타입 정의입니다.
 import { KpiCardDto, Sector } from './company';
 
-export type DashboardRange = '7d' | '30d' | '90d';
-
 export interface DashboardSummary {
-  range: string;
+  range?: string;
   kpis: KpiCardDto[];
   latestActualQuarter: string;
   forecastQuarter: string;
@@ -38,7 +36,7 @@ export interface TimeSeriesSeries {
 }
 
 export interface TimeSeriesResponse {
-  range: string;
+  range?: string;
   metric: string;
   series: TimeSeriesSeries[];
 }
