@@ -47,7 +47,13 @@ const NoticesPage: React.FC = () => {
 
   const filteredPosts = useMemo(() => {
     if (noticeMode === 'active') {
-      return posts.filter((post) => post.status === 'ACTIVE');
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      return posts.filter(
+        (post) =>
+          post.status === 'ACTIVE' &&
+          new Date(post.createdAt).getTime() >= threeMonthsAgo.getTime()
+      );
     }
     return posts.filter((post) => post.status !== 'ACTIVE');
   }, [noticeMode, posts]);
@@ -196,7 +202,7 @@ const NoticesPage: React.FC = () => {
             </p>
           </div>
           <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-            {noticeMode === 'active' ? 'LIVE FEED' : 'ARCHIVE'}
+            {noticeMode === 'active' ? 'RECENT FEED' : 'ARCHIVE'}
           </div>
         </div>
 
