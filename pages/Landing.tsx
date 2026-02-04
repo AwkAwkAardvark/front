@@ -124,6 +124,14 @@ const Landing: React.FC = () => {
 
       console.log('fieldErrors:', fieldErrors);
 
+      if (isRegister && (statusCode === 400 || statusCode === 401 || statusCode === 409)) {
+        setTurnstileToken('');
+        setTurnstileResetKey((prev) => prev + 1);
+        setErrors({});
+        setServerFieldErrors({});
+        setDuplicateEmailError(null);
+      }
+
       if (isRegister && statusCode === 409) {
         const duplicateMessage =
           (error instanceof ApiRequestError && error.apiError?.message) ||
