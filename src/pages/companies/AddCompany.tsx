@@ -14,8 +14,7 @@ const AddCompanyPage: React.FC = () => {
   // - searchCompanies API 연결
   // - confirmCompany API 연결
   // - PROCESSING 상태 처리 로직 활성화
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
+  const [keyword, setKeyword] = useState('');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
@@ -34,23 +33,26 @@ const AddCompanyPage: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    const trimmedName = name.trim();
-    const trimmedCode = code.trim();
+    const trimmedKeyword = keyword.trim();
 
-    if (!trimmedName && !trimmedCode) {
-      setValidationMessage('검색할 기업명 또는 기업코드를 입력해 주세요.');
+    if (!trimmedKeyword) {
+      setValidationMessage('검색할 키워드를 입력해 주세요.');
+      return;
+    }
+
+    if (trimmedKeyword.length < 2) {
+      setValidationMessage('검색 키워드는 2자 이상 입력해 주세요.');
       return;
     }
 
     setValidationMessage(null);
     clearSelection();
     resetConfirmation();
-    await search({ name: trimmedName, code: trimmedCode });
+    await search({ keyword: trimmedKeyword });
   };
 
   const handleReset = () => {
-    setName('');
-    setCode('');
+    setKeyword('');
     setValidationMessage(null);
     clear();
     clearSelection();
@@ -74,8 +76,8 @@ const AddCompanyPage: React.FC = () => {
     try {
       const confirmPayload = {
         companyId: selectedCompany.companyId,
-        code: selectedCompany.code,
-        name: selectedCompany.name,
+        code: selectedCompany.stockCode ?? undefined,
+        name: selectedCompany.corpName,
       };
 
       const result = await confirmCompany(confirmPayload);
@@ -108,10 +110,8 @@ const AddCompanyPage: React.FC = () => {
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <AddCompanyForm
-          name={name}
-          code={code}
-          onNameChange={setName}
-          onCodeChange={setCode}
+          keyword={keyword}
+          onKeywordChange={setKeyword}
           onSearch={handleSearch}
           onReset={handleReset}
           validationMessage={validationMessage}

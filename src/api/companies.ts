@@ -11,9 +11,7 @@ import {
 import { DashboardSummary } from '../types/dashboard';
 
 export const searchCompanies = async (params: {
-  name?: string;
-  code?: string;
-  limit?: number;
+  keyword: string;
 }): Promise<CompanySearchResponse> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
   return apiGet<CompanySearchResponse>('/api/companies/search', params);

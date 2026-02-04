@@ -133,19 +133,16 @@ export interface CompanyOverview {
 }
 
 export interface CompanySearchItem {
-  companyId?: string;
-  name: string;
-  code: string;
-  sector?: Sector;
+  companyId: number;
+  corpName: string;
+  corpEngName?: string | null;
+  stockCode?: string | null;
 }
 
-export interface CompanySearchResponse {
-  items: CompanySearchItem[];
-  count: number;
-}
+export type CompanySearchResponse = CompanySearchItem[];
 
 export interface CompanyConfirmRequest {
-  companyId?: string;
+  companyId?: number;
   code?: string;
   name?: string;
 }

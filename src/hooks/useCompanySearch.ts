@@ -4,8 +4,7 @@ import { searchCompanies } from '../api/companies';
 import { CompanySearchItem } from '../types/company';
 
 type SearchParams = {
-  name: string;
-  code: string;
+  keyword: string;
 };
 
 export const useCompanySearch = () => {
@@ -15,18 +14,17 @@ export const useCompanySearch = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const search = useCallback(async ({ name, code }: SearchParams) => {
+  const search = useCallback(async ({ keyword }: SearchParams) => {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
 
     try {
       const response = await searchCompanies({
-        name: name.trim() ? name.trim() : undefined,
-        code: code.trim() ? code.trim() : undefined,
+        keyword: keyword.trim(),
       });
-      setItems(response.items);
-      setTotal(response.count);
+      setItems(response);
+      setTotal(response.length);
     } catch (err) {
       setError('검색 실패');
       setItems([]);
