@@ -9,7 +9,7 @@ import {
 } from './mockApi';
 import { ModelRunRequest } from '../types/model';
 
-const USE_MOCK_API = true;
+const USE_MOCK_API = false;
 
 type HttpMethod = 'GET' | 'POST';
 
