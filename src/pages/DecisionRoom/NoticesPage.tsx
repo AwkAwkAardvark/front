@@ -67,6 +67,10 @@ const NoticesPage: React.FC = () => {
     );
   }, []);
 
+  const isActiveStatus = useCallback((status: string) => {
+    return status === 'ACTIVE' || status === 'PUBLISHED';
+  }, []);
+
   const filteredPosts = useMemo(() => {
     if (noticeMode === 'active') {
       const threeMonthsAgo = new Date();
@@ -74,15 +78,15 @@ const NoticesPage: React.FC = () => {
       threeMonthsAgo.setHours(0, 0, 0, 0);
       return posts.filter(
         (post) =>
-          post.status === 'ACTIVE' &&
+          isActiveStatus(post.status) &&
           (() => {
             const createdAt = parseLocalDateTime(post.createdAt);
             return createdAt ? createdAt.getTime() >= threeMonthsAgo.getTime() : false;
           })()
       );
     }
-    return posts.filter((post) => post.status !== 'ACTIVE');
-  }, [noticeMode, parseLocalDateTime, posts]);
+    return posts.filter((post) => !isActiveStatus(post.status));
+  }, [isActiveStatus, noticeMode, parseLocalDateTime, posts]);
 
   const recentCutoff = useMemo(() => {
     const cutoff = new Date();
@@ -249,7 +253,7 @@ const NoticesPage: React.FC = () => {
             {posts.slice(0, 8).map((post) => {
               const parsed = parseLocalDateTime(post.createdAt);
               const isRecent =
-                post.status === 'ACTIVE' &&
+                isActiveStatus(post.status) &&
                 parsed !== null &&
                 parsed.getTime() >= recentCutoff.getTime();
               return (
