@@ -1,20 +1,28 @@
-// 애플리케이션 랜딩 페이지입니다.
+﻿// 애플리케이션 랜딩 페이지
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, register } from '../src/services/auth';
+import { ApiRequestError } from '../src/api/client';
+import { getStoredUser, login, logout, register } from '../src/services/auth';
 import TurnstileWidget from '../src/components/TurnstileWidget';
+import SuccessModal from '../src/components/common/SuccessModal';
 
 type AuthMode = 'login' | 'register';
 
 const Landing: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showSignupSuccess, setShowSignupSuccess] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
+  const [duplicateEmailError, setDuplicateEmailError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const navigate = useNavigate();
+  const isAuthenticated = Boolean(currentUser);
 
   // Form State
   const [email, setEmail] = useState('');
@@ -68,7 +76,9 @@ const Landing: React.FC = () => {
     }
 
     setErrors(nextErrors);
+    setServerFieldErrors({});
     setAuthError(null);
+    setDuplicateEmailError(null);
 
     if (Object.keys(nextErrors).length > 0) {
       return;
@@ -88,12 +98,62 @@ const Landing: React.FC = () => {
           name: trimmedName,
           turnstileToken,
         });
+        setShowAuth(false);
+        setShowSignupSuccess(true);
       } else {
         await login({ email: trimmedEmail, password });
+        setCurrentUser(getStoredUser());
+        navigate('/dashboard');
       }
-      navigate('/dashboard');
     } catch (error) {
-      setAuthError(isRegister ? '회원가입에 실패했습니다. 다시 시도해주세요.' : '로그인에 실패했습니다. 다시 시도해주세요.');
+      const message = error instanceof Error ? error.message : '';
+      const fieldErrors: Record<string, string> = {};
+      const status =
+        (error as { response?: { status?: number | string } })?.response?.status ??
+        (error instanceof ApiRequestError ? error.apiError?.status : undefined);
+      const statusCode =
+        typeof status === 'string'
+          ? Number(status)
+          : status;
+
+      console.log('status:', (error as { response?: { status?: number | string } })?.response?.status);
+      console.log('axios data:', (error as { response?: { data?: unknown } })?.response?.data);
+      console.log('message:', message);
+
+      if (error instanceof ApiRequestError && error.apiError?.errors?.length) {
+        error.apiError.errors.forEach((detail) => {
+          if (detail.field && detail.message) {
+            fieldErrors[detail.field] = detail.message;
+          }
+        });
+        console.log('apiError:', error.apiError);
+      }
+
+      console.log('fieldErrors:', fieldErrors);
+
+      if (isRegister && (statusCode === 400 || statusCode === 401 || statusCode === 409)) {
+        setTurnstileToken('');
+        setTurnstileResetKey((prev) => prev + 1);
+        setErrors({});
+        setServerFieldErrors({});
+        setDuplicateEmailError(null);
+      }
+
+      if (isRegister && statusCode === 409) {
+        const duplicateMessage =
+          (error instanceof ApiRequestError && error.apiError?.message) ||
+          message;
+        setAuthError(null);
+        setDuplicateEmailError(duplicateMessage ?? null);
+        return;
+      } else {
+        if (Object.keys(fieldErrors).length > 0) {
+          setServerFieldErrors(fieldErrors);
+        }
+        if (Object.keys(fieldErrors).length === 0) {
+          setAuthError(isRegister ? '회원가입에 실패했습니다. 다시 시도해 주세요.' : '이메일 또는 비밀번호가 일치하지 않습니다.');
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +162,9 @@ const Landing: React.FC = () => {
   const toggleAuthMode = () => {
     setAuthMode(prev => prev === 'login' ? 'register' : 'login');
     setErrors({});
+    setServerFieldErrors({});
     setAuthError(null);
+    setDuplicateEmailError(null);
     setConfirmPassword('');
     setTurnstileToken('');
   };
@@ -114,8 +176,47 @@ const Landing: React.FC = () => {
     }
   }, []);
 
+  const handleSignupSuccessConfirm = () => {
+    setShowSignupSuccess(false);
+    setAuthMode('login');
+    setShowAuth(true);
+    setErrors({});
+    setServerFieldErrors({});
+    setAuthError(null);
+    setDuplicateEmailError(null);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // ignore logout errors for now
+    } finally {
+      setCurrentUser(null);
+      navigate('/');
+    }
+  };
+
+  const handleSentinelClick = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+      return;
+    }
+    setAuthMode('login');
+    setShowAuth(true);
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-slate-500 selection:text-white relative">
+      <SuccessModal
+        open={showSignupSuccess}
+        title="회원가입 이메일 인증"
+        message="입력하신 주소로 이메일을 보냈습니다. 확인 후 인증해 주세요."
+        confirmLabel="로그인으로 돌아가기"
+        onConfirm={handleSignupSuccessConfirm}
+      />
       
       {/* Auth Portal Overlay */}
       {showAuth && (
@@ -154,29 +255,51 @@ const Landing: React.FC = () => {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="ID를 입력해 주세요"
+                    placeholder="이름을 입력해 주세요."
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.name)}
                   />
                   {errors.name && (
                     <p className="text-xs text-red-400">{errors.name}</p>
                   )}
-                </div>
+                  {serverFieldErrors.name && (
+                    <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.name}</div>
+                  )}</div>
               )}
               
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">이메일</label>
                 <input 
                   type="email" 
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="이메일을 입력해 주세요"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setDuplicateEmailError(null);
+                    setServerFieldErrors((prev) => {
+                      const { email, ...rest } = prev;
+                      return rest;
+                    });
+                  }}
+                  placeholder="이메일을 입력해 주세요."
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.email)}
+                  aria-describedby={duplicateEmailError ? 'duplicate-email-tooltip' : undefined}
                 />
+                {duplicateEmailError && (
+                  <p
+                    id="duplicate-email-tooltip"
+                    role="alert"
+                    className="text-xs text-red-400"
+                  >
+                    {duplicateEmailError}
+                  </p>
+                )}
                 {errors.email && (
                   <p className="text-xs text-red-400">{errors.email}</p>
+                )}
+                {serverFieldErrors.email && (
+                  <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.email}</div>
                 )}
               </div>
 
@@ -187,14 +310,16 @@ const Landing: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="********"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.password)}
                 />
                 {errors.password && (
                   <p className="text-xs text-red-400">{errors.password}</p>
                 )}
-              </div>
+                {serverFieldErrors.password && (
+                  <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.password}</div>
+                )}</div>
 
               {authMode === 'register' && (
                 <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
@@ -204,18 +329,21 @@ const Landing: React.FC = () => {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••••••"
+                    placeholder="********"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.confirmPassword)}
                   />
                   {errors.confirmPassword && (
                     <p className="text-xs text-red-400">{errors.confirmPassword}</p>
                   )}
-                </div>
+                  {serverFieldErrors.confirmPassword && (
+                    <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.confirmPassword}</div>
+                  )}</div>
               )}
 
               {authMode === 'register' && (
                 <TurnstileWidget
+                  key={turnstileResetKey}
                   className="mt-2"
                   onVerify={(token) => {
                     setTurnstileToken(token);
@@ -235,7 +363,7 @@ const Landing: React.FC = () => {
                 className="w-full py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-xl mt-4 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isSubmitting || (authMode === 'register' && !turnstileToken)}
               >
-                {isSubmitting ? '처리 중...' : authMode === 'login' ? '로그인' : '가입'}
+                {isSubmitting ? '처리 중..' : authMode === 'login' ? '로그인' : '가입'}
               </button>
             </form>
 
@@ -245,7 +373,7 @@ const Landing: React.FC = () => {
                 className="w-full py-4 border border-white/10 text-slate-300 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 hover:text-white transition-all flex items-center justify-center space-x-2"
               >
                 <i className={`fas ${authMode === 'login' ? 'fa-plus' : 'fa-lock'} text-[8px]`}></i>
-                <span>{authMode === 'login' ? '새 계정 생성' : '액세스 포털로 돌아가기'}</span>
+                <span>{authMode === 'login' ? '계정 생성' : '로그인으로 돌아가기'}</span>
               </button>
             </div>
           </div>
@@ -259,7 +387,7 @@ const Landing: React.FC = () => {
             <div className="w-60 h-16">
               <img
                 src="/img/logonobg.svg"
-                alt="SENTINEL 로고"
+                alt="SENTINEL 濡쒓퀬"
                 className="h-30 w-auto -translate-y-12"
               />
             </div>
@@ -268,12 +396,21 @@ const Landing: React.FC = () => {
           <div className="hidden md:flex items-center space-x-10 text-[10px] uppercase tracking-[0.2em] font-medium text-slate-400">
             <a href="#platform" className="hover:text-white transition-colors">플랫폼</a>
             <a href="#network" className="hover:text-white transition-colors">네트워크</a>
-            <button 
-              onClick={() => { setAuthMode('login'); setShowAuth(true); }}
-              className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-slate-200 transition-all"
-            >
-              기업 로그인
-            </button>
+            {isAuthenticated ? (
+              <button
+                onClick={handleLogout}
+                className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-slate-200 transition-all"
+              >
+                로그아웃
+              </button>
+            ) : (
+              <button
+                onClick={() => { setAuthMode('login'); setShowAuth(true); }}
+                className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-slate-200 transition-all"
+              >
+                기업 로그인
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -297,8 +434,7 @@ const Landing: React.FC = () => {
         
         <div className="relative z-10 fade-up flex flex-col items-center mb-12">
           <button 
-            //로그인 기능 스킵 onClick={() => { setAuthMode('login'); setShowAuth(true); }}
-            onClick={() => navigate('/dashboard')}
+            onClick={handleSentinelClick}
             className="btn-primary group !bg-white/10 !text-white !backdrop-blur-xl border border-white/20 px-12 py-5 hover:!bg-white hover:!text-black transition-all shadow-2xl"
           >
             <span className="text-xs uppercase tracking-[0.2em] font-bold">S E N T I N E L</span>
@@ -307,7 +443,7 @@ const Landing: React.FC = () => {
         </div>
 
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-4 opacity-60">
-           <span className="text-[9px] uppercase tracking-[0.5em] text-white">탐색</span>
+               <span className="text-[9px] uppercase tracking-[0.5em] text-white">SCROLL</span>
            <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent"></div>
         </div>
       </section>
@@ -320,31 +456,31 @@ const Landing: React.FC = () => {
               <span className="w-2 h-2 bg-slate-400 mr-2"></span> STRAGITY / INSIGHT
             </div>
             <h2 className="text-5xl md:text-6xl font-light leading-[1.1] text-white mb-0">
-              전략, 리스크, AI를 <br/>
-              통해 <br/>
-              <span className="text-slate-500 italic">드러내다.</span>
+              통합, 리스크 AI로<br/>
+              비즈니스를 <br/>
+              <span className="text-slate-500 italic">선도합니다.</span>
             </h2>
           </div>
           <div className="md:col-span-6">
             <p className="text-lg text-slate-400 font-light leading-relaxed mb-8 ">
-              힘의 차이가 느껴지십니까 Human?<br />
+              불확실성이 커지는 지금,<br />
               <br />
-              SENTINEL은 기업이 복잡한 협력 생태계를 전략적으로 탐색하고 제어할 수 있도록 지원합니다.
+              SENTINEL은 기업의 복잡한 위험 신호를 정밀하게 탐지하고 의사결정을 지원합니다.
             </p>
             <button className="group flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white">
               <span className="bg-white/10 p-4 rounded-full group-hover:bg-white group-hover:text-black transition-all">
                 <i className="fas fa-arrow-right"></i>
               </span>
-              <span>플랫폼 알아보기</span>
+              <span>플랫폼 더 알아보기</span>
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { num: '01.', title: '리스크 분석', desc: '분산된 지표를 결합해 기업의 잠재적 위험을 정밀하게 식별합니다.', icon: 'fa-microscope' },
-            { num: '02.', title: '통합 인사이트', desc: '복잡한 기업 정보를 결합하여 의사결정 시간을 효율적으로 관리합니다.', icon: 'fa-vial' },
-            { num: '03.', title: '흐름예측 AI', desc: '과거와 현재 데이터를 기반으로 향후 분기의 흐름을 선제적으로 예측합니다.', icon: 'fa-brain' },
+            { num: '01.', title: '리스크 분석', desc: '분산된 지표와 데이터를 결합해 기업의 현재 위험을 정교하게 측정합니다.', icon: 'fa-microscope' },
+            { num: '02.', title: '통합 인사이트', desc: '복잡한 기업 정보를 결합해 의사결정 시간을 획기적으로 줄입니다.', icon: 'fa-vial' },
+            { num: '03.', title: '예측형 AI', desc: '과거와 현재 데이터를 기반으로 향후 분기 리스크를 예측합니다.', icon: 'fa-brain' },
           ].map((feat, i) => (
             <div key={i} className="p-10 border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-500 group">
               <div className="mb-12 flex justify-between items-start">
@@ -374,21 +510,19 @@ const Landing: React.FC = () => {
                   <span className="w-2 h-2 bg-slate-400 mr-2"></span> Our Company
                </div>
                <h2 className="text-4xl md:text-5xl serif leading-tight mb-8">
-                 우리는 <br/>
-                 <span className="italic text-slate-400">데이터</span>를 읽고, <br/>
-                 판단 가능한 인사이트로 <br/> 제공합니다.
+                 우리의<br/>
+                 <span className="italic text-slate-400">데이터</span>를 쓰고, <br/>
+                 간단하지만 강력한 인사이트로<br/>제공합니다.
                </h2>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                  <p className="text-sm text-slate-500 leading-relaxed">전문가의 직관에 의존하던 판단을 데이터 기반 인사이트로 전환해,
-조직이 더 빠르고 일관된 의사결정을 내릴 수 있도록 돕습니다.</p>
-                  <p className="text-sm text-slate-500 leading-relaxed">우리는 문제가 발생한 뒤 설명하는 도구가 아니라,
-위험이 드러나기 전에 신호를 포착하는 시스템을 지향합니다.</p>
+                  <p className="text-sm text-slate-500 leading-relaxed">전문가의 직관에 의존하던 의사결정을 데이터 기반 인사이트로 전환합니다.</p>
+                  <p className="text-sm text-slate-500 leading-relaxed">문제가 발생한 뒤가 아니라, 위험이 커지기 전에 신호를 포착합니다.</p>
                </div>
                <button className="flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white group">
                   <span className="bg-white text-black p-4 rounded-full group-hover:bg-slate-200 transition-all">
                     <i className="fas fa-plus"></i>
                   </span>
-                  <span>궁금하십니까?</span>
+                  <span>문의하기</span>
                </button>
             </div>
          </div>
@@ -398,15 +532,15 @@ const Landing: React.FC = () => {
       <section className="py-32 px-10 border-t border-white/5 bg-white/[0.01]">
          <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-end mb-20">
-               <h2 className="text-6xl serif font-light">소식이 궁금하신가요?</h2>
+               <h2 className="text-6xl serif font-light">최신 인사이트</h2>
                <button className="px-6 py-2 border border-white/20 rounded-full text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                 모든 뉴스카드 보기 <i className="fas fa-arrow-right ml-2"></i>
+                 모든 뉴스 보기 <i className="fas fa-arrow-right ml-2"></i>
                </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                <div className="md:col-span-2 group cursor-pointer">
                   <div className="aspect-video bg-slate-900 overflow-hidden mb-8">
-                    <video src="/img/robot.mp4" className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" alt="뉴스 1"
+                    <video src="/img/robot.mp4" className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                       autoPlay
                       muted
                       loop
@@ -414,19 +548,19 @@ const Landing: React.FC = () => {
                       preload="auto"
                      />
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-4"><span>RECENT</span><span>2026년 01월 26일</span></div>
-                  <h3 className="text-3xl serif mb-4 group-hover:text-slate-300 transition-colors">데이터 기반 통합 리스크 신호 포착</h3>
-                  <p className="text-slate-500 text-sm mb-6 max-w-xl">재무 지표, 현금흐름, 외부 환경 데이터를 결합해 기업의 구조적 위험 신호를 조기에 식별, <br/>인사이트를 제공합니다.</p>
+                  <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-4"><span>RECENT</span><span>2026.01.26</span></div>
+                  <h3 className="text-3xl serif mb-4 group-hover:text-slate-300 transition-colors">데이터 기반 통합 리스크 조기 경보</h3>
+                  <p className="text-slate-500 text-sm mb-6 max-w-xl">수요 지표, 공급망, 외부 환경 데이터를 결합해 기업 위험 신호를 조기에 포착합니다.</p>
                   <span className="text-[10px] uppercase tracking-widest font-bold border-b border-white/20 pb-1 group-hover:border-white transition-all">기사 읽기</span>
                </div>
                <div className="space-y-12">
                   {[
-                    { date: '2025년 12월 18일', title: '흑자도산을 예측하는 재무 패턴 확장' },
-                    { date: '2025년 12월 2일', title: '사건이 아닌 시간으로 리스크의 흐름을 보다' },
-                    { date: '2025년 11월 21일', title: 'AI 기반 기업 리스크 분석, 실무에 적용되다' }
+                    { date: '2025.12.18', title: '투자 리스크를 줄이는 공급망 확장 전략' },
+                    { date: '2025.12.02', title: '사건 이후가 아닌 사전 위험 예측의 중요성' },
+                    { date: '2025.11.21', title: 'AI 기반 기업 리스크 분석, 국내 적용 사례' }
                   ].map((item, i) => (
                     <div key={i} className="group cursor-pointer border-t border-white/10 pt-8">
-                      <div className="flex justify-between text-[9px] text-slate-600 uppercase tracking-[0.2em] mb-3"><span>소식</span><span>{item.date}</span></div>
+                      <div className="flex justify-between text-[9px] text-slate-600 uppercase tracking-[0.2em] mb-3"><span>뉴스</span><span>{item.date}</span></div>
                       <h4 className="text-xl serif leading-snug group-hover:text-slate-300 transition-colors">{item.title}</h4>
                       <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity"><i className="fas fa-arrow-right text-xs"></i></div>
                     </div>
@@ -442,7 +576,7 @@ const Landing: React.FC = () => {
             <img src="/img/robot.jpg" className="w-full h-full object-cover" />
          </div>
          <div className="relative z-10 max-w-3xl">
-            <h2 className="text-4xl md:text-5xl serif leading-tight mb-12">우리는 기업 네트워크의 불확실성을 <br/>데이터 인텔리전스로 <br/>선제적으로 해석합니다.</h2>
+            <h2 className="text-4xl md:text-5xl serif leading-tight mb-12">우리의 기업 네트워크는 불확실성을<br/>데이터 인텔리전스로<br/>해결합니다.</h2>
             <button 
               onClick={() => { setAuthMode('register'); setShowAuth(true); }}
               className="inline-flex items-center space-x-4 group"
@@ -465,7 +599,7 @@ const Landing: React.FC = () => {
                 <a href="#" className="hover:text-white transition-colors">뉴스룸</a>
              </div>
              <div className="md:col-span-2 flex flex-col space-y-2">
-                <span className="text-white font-bold mb-2">연결</span>
+                <span className="text-white font-bold mb-2">연락처</span>
                 <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
                 <a href="#" className="hover:text-white transition-colors">X</a>
              </div>
@@ -477,3 +611,9 @@ const Landing: React.FC = () => {
 };
 
 export default Landing;
+
+
+
+
+
+

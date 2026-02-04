@@ -1,12 +1,14 @@
 // 메인 애플리케이션 셸로 라우팅과 대시보드 레이아웃을 구성합니다.
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Companies from './pages/Companies';
 import CompanyDetail from './pages/CompanyDetail';
 import DecisionRoom from './pages/DecisionRoom';
 import Landing from './pages/Landing';
 import AddCompany from './pages/companies/add';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import { getStoredUser } from './src/services/auth';
 
 const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: string }) => {
   const location = useLocation();
@@ -26,6 +28,10 @@ const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: str
 };
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  const user = getStoredUser();
+  const displayName = user?.name ?? user?.email ?? 'Unknown User';
+  const displayMeta = user?.email ?? 'Signed in';
+
   return (
     <div className="flex h-screen w-full bg-[#050505]">
       <aside className="w-64 border-r border-white/10 flex flex-col z-20 glass-panel">
@@ -38,7 +44,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                 className="w-20 h-20 rounded-full object-cover"
               />
             </div>
-            <h1 className="text-xl font-bold tracking-widest serif text-white">SENTIENEL</h1>
+            <h1 className="text-xl font-bold tracking-widest serif text-white">SENTINEL</h1>
           </Link>
         </div>
 
@@ -54,8 +60,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               <img src="https://picsum.photos/100/100" alt="Avatar" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">Admin Account</p>
-              <p className="text-[10px] text-slate-500">Global Director</p>
+              <p className="text-xs font-semibold text-white truncate">{displayName}</p>
+              <p className="text-[10px] text-slate-500 truncate">{displayMeta}</p>
             </div>
           </div>
         </div>
@@ -87,6 +93,7 @@ const App: React.FC = () => {
         <Route path="/companies/:id" element={<DashboardLayout children={<CompanyDetail />} />} />
         <Route path="/companies/add" element={<DashboardLayout children={<AddCompany />} />} />
         <Route path="/decisions" element={<DashboardLayout children={<DecisionRoom />} />} />
+        <Route path="/auth/verify-email" element={<VerifyEmail />} />
       </Routes>
     </Router>
   );

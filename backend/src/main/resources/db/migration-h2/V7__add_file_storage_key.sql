@@ -1,2 +1,0 @@
-ALTER TABLE files
-ADD COLUMN storage_key VARCHAR(500);

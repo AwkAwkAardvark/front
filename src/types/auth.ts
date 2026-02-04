@@ -3,11 +3,33 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  role: string;
 }
 
 export interface AuthSession {
   token: string;
   user: AuthUser;
+}
+
+export interface AuthLoginResponse {
+  tokenType: string;
+  accessToken: string;
+  expiresIn: number;
+  passwordExpired: boolean;
+  user: {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+}
+
+export interface SignupResponse {
+  id: number;
+  uuid: string;
+  email: string;
+  status: string;
+  role: string;
 }
 
 export interface LoginRequest {
@@ -20,4 +42,15 @@ export interface RegisterRequest {
   password: string;
   name: string;
   turnstileToken: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  tokenType: string;
+  accessToken: string;
+  expiresIn: number;
+  passwordExpired: boolean;
 }
