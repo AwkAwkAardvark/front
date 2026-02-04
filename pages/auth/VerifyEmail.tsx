@@ -7,20 +7,27 @@ const VerifyEmail: React.FC = () => {
   const status = new URLSearchParams(location.search).get('status');
   const isSuccess = status === 'success';
   const isAlreadyVerified = status === 'already_verified';
+  const isExpired = status === 'expired';
   const iconClass = isSuccess
     ? 'fa-check'
     : isAlreadyVerified
       ? 'fa-circle-check'
+      : isExpired
+        ? 'fa-clock'
       : 'fa-triangle-exclamation';
   const title = isSuccess
     ? '이메일 인증 완료'
     : isAlreadyVerified
       ? '이미 인증된 이메일'
+      : isExpired
+        ? '인증 링크 만료'
       : '이메일 인증 실패';
   const message = isSuccess
     ? '이메일 인증이 완료되었습니다. 로그인하여 계속 진행해 주세요.'
     : isAlreadyVerified
       ? '이 이메일은 이미 인증이 완료된 상태입니다. 로그인하여 계속 진행해 주세요.'
+      : isExpired
+        ? '인증 링크가 만료되었습니다. 회원가입을 다시 진행해 주세요.'
       : '이메일 인증에 실패했습니다. 링크가 만료되었거나 잘못된 요청일 수 있습니다.';
 
   return (
