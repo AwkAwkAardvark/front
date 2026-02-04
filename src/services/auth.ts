@@ -119,6 +119,7 @@ export const login = async (payload: LoginRequest): Promise<AuthSession> => {
       id: response.user.userId,
       email: response.user.email,
       name: response.user.name,
+      role: response.user.role,
     },
   };
 
