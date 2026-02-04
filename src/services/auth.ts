@@ -4,6 +4,7 @@ import {
   AuthSession,
   AuthUser,
   LoginRequest,
+  RefreshTokenResponse,
   RegisterRequest,
   SignupResponse,
 } from '../types/auth';
@@ -39,6 +40,66 @@ const buildMockUser = (email: string, name?: string): AuthUser => ({
 export const getAuthToken = (): string | null => getStoredSession()?.token ?? null;
 
 export const getStoredUser = (): AuthUser | null => getStoredSession()?.user ?? null;
+
+export const updateStoredToken = (token: string) => {
+  const current = getStoredSession();
+  if (!current) return;
+  storeSession({ ...current, token });
+};
+
+export const clearStoredSession = () => {
+  storeSession(null);
+};
+
+const resolveBaseUrl = () => (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
+const buildUrl = (path: string): string => {
+  const baseUrl = resolveBaseUrl();
+  return path.startsWith('http') ? path : `${baseUrl}${path}`;
+};
+
+const isApiResponse = (payload: unknown): payload is { success: boolean; data: unknown } => {
+  if (typeof payload !== 'object' || payload === null) return false;
+  const record = payload as Record<string, unknown>;
+  return typeof record.success === 'boolean' && 'data' in record;
+};
+
+export const refreshAccessToken = async (): Promise<RefreshTokenResponse> => {
+  if (USE_MOCK_AUTH) {
+    const token = `mock-${Date.now()}`;
+    updateStoredToken(token);
+    return {
+      tokenType: 'Bearer',
+      accessToken: token,
+      expiresIn: 3600,
+      passwordExpired: false,
+    };
+  }
+
+  const response = await fetch(buildUrl('/api/auth/refresh'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('Token refresh failed');
+  }
+
+  const payload = (await response.json()) as unknown;
+  if (!response.ok) {
+    throw new Error('Token refresh failed');
+  }
+
+  if (isApiResponse(payload)) {
+    return payload.data as RefreshTokenResponse;
+  }
+
+  return payload as RefreshTokenResponse;
+};
 
 export const login = async (payload: LoginRequest): Promise<AuthSession> => {
   if (USE_MOCK_AUTH) {
@@ -86,10 +147,10 @@ export const register = async (payload: RegisterRequest): Promise<SignupResponse
 
 export const logout = async (): Promise<void> => {
   if (USE_MOCK_AUTH) {
-    storeSession(null);
+    clearStoredSession();
     return;
   }
 
   await apiPost<void, Record<string, never>>('/api/auth/logout', {});
-  storeSession(null);
+  clearStoredSession();
 };
