@@ -8,7 +8,8 @@ import { getCompanyOverview } from '../api/companies';
 import { getMockCompanyOverview } from '../mocks/companies.mock';
 import { CompanyOverview } from '../types/company';
 import {
-  getCompanyStatusLabel,
+  getCompanyStatusFromHealth,
+  getCompanyHealthScore,
   toMetricForecast,
   toMetricCards,
   toSignalCards,
@@ -57,7 +58,8 @@ const CompanyDetailPage: React.FC = () => {
     void loadDetail();
   }, [id]);
 
-  const statusLabel = detail ? getCompanyStatusLabel(detail.company.riskLevel) : '—';
+  const healthScore = detail ? getCompanyHealthScore(detail.company) : 0;
+  const statusLabel = detail ? getCompanyStatusFromHealth(healthScore) : '—';
   const metricForecast = toMetricForecast(detail?.forecast);
   const metrics = toMetricCards(detail?.keyMetrics);
   const signals = toSignalCards(detail?.signals);
@@ -68,7 +70,9 @@ const CompanyDetailPage: React.FC = () => {
       `기업명: ${companyDetail.company.name}`,
       `기업 ID: ${companyDetail.company.id}`,
       `산업군: ${companyDetail.company.sector.label}`,
-      `리스크 등급: ${getCompanyStatusLabel(companyDetail.company.riskLevel)}`,
+      `리스크 등급: ${getCompanyStatusFromHealth(
+        getCompanyHealthScore(companyDetail.company),
+      )}`,
       `작성일: ${new Date().toLocaleDateString('ko-KR')}`,
     ];
     const metricLines =

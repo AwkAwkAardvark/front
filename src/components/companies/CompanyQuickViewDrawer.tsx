@@ -4,7 +4,8 @@ import { CompanyOverview, CompanySummary } from '../../types/company';
 import {
   formatCompanyRevenue,
   getCompanyHealthScore,
-  getCompanyStatusLabel,
+  getCompanyStatusFromHealth,
+  getHealthTone,
   getCompanyRevenue,
   getMetricValue,
 } from '../../utils/companySelectors';
@@ -47,10 +48,11 @@ const CompanyQuickViewDrawer: React.FC<CompanyQuickViewDrawerProps> = ({
       }
     : null;
   const healthScore = summaryAsPreview ? getCompanyHealthScore(summaryAsPreview) : 0;
+  const healthTone = getHealthTone(healthScore);
   const revenueValue =
     getMetricValue(detail?.keyMetrics, 'ANNUAL_REVENUE') ??
     (summaryAsPreview ? getCompanyRevenue(summaryAsPreview) : 0);
-  const statusLabel = summary ? getCompanyStatusLabel(summary.riskLevel) : '—';
+  const statusLabel = summary ? getCompanyStatusFromHealth(healthScore) : '—';
 
   return (
     <>
@@ -94,7 +96,17 @@ const CompanyQuickViewDrawer: React.FC<CompanyQuickViewDrawerProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">네트워크 건강도</span>
-                <div className="mt-3 text-2xl font-light text-white">{healthScore}%</div>
+                <div
+                  className={`mt-3 text-2xl font-light ${
+                    healthTone === 'good'
+                      ? 'text-emerald-300'
+                      : healthTone === 'warn'
+                      ? 'text-amber-300'
+                      : 'text-rose-300'
+                  }`}
+                >
+                  {healthScore}%
+                </div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">연 매출</span>

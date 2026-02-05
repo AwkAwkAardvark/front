@@ -25,8 +25,21 @@ export const getCompanyStatusLabel = (riskLevel: RiskLevel): string => {
   }
 };
 
+export const getCompanyStatusFromHealth = (score: number): string => {
+  const tone = getHealthTone(score);
+  if (tone === 'good') return '정상';
+  if (tone === 'warn') return '주의';
+  return '위험';
+};
+
 export const getCompanyHealthScore = (company: CompanySummary): number =>
   company.kpi?.networkHealth ?? company.overallScore ?? 0;
+
+export const getHealthTone = (score: number): 'good' | 'warn' | 'risk' => {
+  if (score >= 60) return 'good';
+  if (score >= 30) return 'warn';
+  return 'risk';
+};
 
 export const getCompanyRevenue = (company: CompanySummary): number =>
   company.kpi?.annualRevenue ?? 0;

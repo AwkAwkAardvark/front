@@ -5,7 +5,8 @@ import {
   formatCompanyRevenue,
   getCompanyHealthScore,
   getCompanyRevenue,
-  getCompanyStatusLabel,
+  getCompanyStatusFromHealth,
+  getHealthTone,
 } from '../../utils/companySelectors';
 
 interface CompaniesTableProps {
@@ -35,8 +36,9 @@ const CompaniesTable: React.FC<CompaniesTableProps> = ({ companies, onSelect }) 
         </thead>
         <tbody className="divide-y divide-white/5">
           {companies.map((company) => {
-            const statusLabel = getCompanyStatusLabel(company.riskLevel);
             const healthScore = getCompanyHealthScore(company);
+            const healthTone = getHealthTone(healthScore);
+            const statusLabel = getCompanyStatusFromHealth(healthScore);
             const revenue = getCompanyRevenue(company);
             return (
               <tr
@@ -62,9 +64,9 @@ const CompaniesTable: React.FC<CompaniesTableProps> = ({ companies, onSelect }) 
                     <div className="w-24 bg-white/10 rounded-full h-1 overflow-hidden">
                       <div
                         className={`h-full ${
-                          healthScore >= 80
+                          healthTone === 'good'
                             ? 'bg-emerald-400'
-                            : healthScore >= 60
+                            : healthTone === 'warn'
                             ? 'bg-amber-400'
                             : 'bg-rose-400'
                         }`}
