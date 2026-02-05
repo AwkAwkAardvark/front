@@ -1,10 +1,8 @@
 import React from 'react';
 
 type AddCompanyFormProps = {
-  name: string;
-  code: string;
-  onNameChange: (value: string) => void;
-  onCodeChange: (value: string) => void;
+  keyword: string;
+  onKeywordChange: (value: string) => void;
   onSearch: () => void;
   onReset: () => void;
   validationMessage?: string | null;
@@ -12,10 +10,8 @@ type AddCompanyFormProps = {
 };
 
 const AddCompanyForm: React.FC<AddCompanyFormProps> = ({
-  name,
-  code,
-  onNameChange,
-  onCodeChange,
+  keyword,
+  onKeywordChange,
   onSearch,
   onReset,
   validationMessage,
@@ -24,26 +20,16 @@ const AddCompanyForm: React.FC<AddCompanyFormProps> = ({
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
       <h3 className="text-lg text-white">기업 검색</h3>
-      <p className="mt-2 text-sm text-slate-400">기업명 또는 기업코드를 입력해 검색하세요.</p>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <p className="mt-2 text-sm text-slate-400">기업명 또는 영문명을 입력해 검색하세요. (2자 이상)</p>
+      <div className="mt-6">
         <label className="flex flex-col gap-2 text-sm text-slate-300">
-          기업명
+          검색 키워드
           <input
             type="text"
-            value={name}
-            onChange={(event) => onNameChange(event.target.value)}
+            value={keyword}
+            onChange={(event) => onKeywordChange(event.target.value)}
             className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white placeholder:text-slate-500 focus:border-white/30 focus:outline-none"
-            placeholder="예: 네오클라우드"
-          />
-        </label>
-        <label className="flex flex-col gap-2 text-sm text-slate-300">
-          기업코드
-          <input
-            type="text"
-            value={code}
-            onChange={(event) => onCodeChange(event.target.value)}
-            className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white placeholder:text-slate-500 focus:border-white/30 focus:outline-none"
-            placeholder="예: NC-441"
+            placeholder="예: 삼성"
           />
         </label>
       </div>

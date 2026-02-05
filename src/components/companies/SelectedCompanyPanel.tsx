@@ -31,16 +31,16 @@ const SelectedCompanyPanel: React.FC<SelectedCompanyPanelProps> = ({
         <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-black/30 p-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">기업명</p>
-            <p className="text-base text-white">{selectedCompany.name}</p>
+            <p className="text-base text-white">{selectedCompany.corpName}</p>
           </div>
           <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">코드</p>
-              <p>{selectedCompany.code}</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">영문명</p>
+              <p>{selectedCompany.corpEngName ?? '-'}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">업종</p>
-              <p>{selectedCompany.sector?.label ?? '-'}</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">종목코드</p>
+              <p>{selectedCompany.stockCode ?? '-'}</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">ID</p>

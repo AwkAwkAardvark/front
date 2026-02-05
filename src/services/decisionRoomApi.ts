@@ -115,6 +115,7 @@ export async function deleteQaPost(postId: number | string): Promise<void> {
 
 const mapPostToQaPost = (post: PostItem): QaPost => ({
   id: String(post.id),
+  userId: post.userId,
   title: post.title,
   body: post.content,
   author: `User ${post.userId}`,

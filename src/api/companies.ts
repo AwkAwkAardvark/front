@@ -11,9 +11,7 @@ import {
 import { DashboardSummary } from '../types/dashboard';
 
 export const searchCompanies = async (params: {
-  name?: string;
-  code?: string;
-  limit?: number;
+  keyword: string;
 }): Promise<CompanySearchResponse> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
   return apiGet<CompanySearchResponse>('/api/companies/search', params);
@@ -51,11 +49,9 @@ export const getCompanyOverview = async (companyId: string): Promise<CompanyOver
   return apiGet<CompanyOverview>(`/api/companies/${companyId}/overview`);
 };
 
-export const getDashboardSummary = async (range?: string): Promise<DashboardSummary> => {
+export const getDashboardSummary = async (): Promise<DashboardSummary> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<DashboardSummary>('/api/dashboard/summary', {
-    range,
-  });
+  return apiGet<DashboardSummary>('/api/dashboard/summary');
 };
 
 export const createUpdateRequest = async (

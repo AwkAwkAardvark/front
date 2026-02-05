@@ -1,4 +1,4 @@
-﻿// ?섏궗寃곗젙猷??섏씠吏 而댄룷?뚰듃?낅땲??
+﻿// 의사결정룸 페이지 컴포넌트입니다.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DecisionRoomHeader from '../components/decisionRoom/DecisionRoomHeader';
@@ -46,7 +46,8 @@ const DecisionRoom: React.FC = () => {
   const [composerError, setComposerError] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [hasLoadedQa, setHasLoadedQa] = useState<boolean>(false);
-  const role = getStoredUser()?.role?.toUpperCase();
+  const currentUser = getStoredUser();
+  const role = currentUser?.role?.toUpperCase();
   const isAdmin = role === 'ADMIN';
 
   const loadBulletins = useCallback(async () => {
@@ -57,7 +58,7 @@ const DecisionRoom: React.FC = () => {
       const response = await fetchBulletins(bulletinMode);
       setBulletins(response);
     } catch (error) {
-      setErrorBulletins('怨듭? ?곗씠?곕? 遺덈윭?ㅻ뒗 以?臾몄젣媛 諛쒖깮?덉뒿?덈떎.');
+      setErrorBulletins('공시 데이터를 불러오는 중 문제가 발생했습니다.');
     } finally {
       setIsLoadingBulletins(false);
     }
@@ -75,7 +76,7 @@ const DecisionRoom: React.FC = () => {
       }
       setHasLoadedQa(true);
     } catch (error) {
-      setErrorQa('Q&A ?곗씠?곕? 遺덈윭?ㅻ뒗 以?臾몄젣媛 諛쒖깮?덉뒿?덈떎.');
+      setErrorQa('Q&A 데이터를 불러오는 중 문제가 발생했습니다.');
     } finally {
       setIsLoadingQa(false);
     }
@@ -94,6 +95,10 @@ const DecisionRoom: React.FC = () => {
   const filteredQaPosts = useMemo(() => {
     const searchLower = qaSearch.trim().toLowerCase();
     return qaPosts.filter((post) => {
+      if (!isAdmin) {
+        if (!currentUser?.id) return false;
+        if (String(post.userId) !== String(currentUser.id)) return false;
+      }
       const statusMatch = qaStatusFilter === 'all' || post.status === qaStatusFilter;
       if (!statusMatch) return false;
       if (isAdmin && qaAuthorFilter !== 'all' && post.author !== qaAuthorFilter) {
@@ -110,7 +115,7 @@ const DecisionRoom: React.FC = () => {
         inReplies
       );
     });
-  }, [isAdmin, qaAuthorFilter, qaPosts, qaSearch, qaStatusFilter]);
+  }, [currentUser?.id, isAdmin, qaAuthorFilter, qaPosts, qaSearch, qaStatusFilter]);
 
   const qaAuthors = useMemo(() => {
     const authorMap = new Map<string, string>();
@@ -156,7 +161,7 @@ const DecisionRoom: React.FC = () => {
 
   const handleCreatePost = useCallback(async () => {
     if (!composerTitle.trim() || !composerBody.trim()) {
-      setComposerError('?쒕ぉ怨??댁슜??紐⑤몢 ?낅젰?댁＜?몄슂.');
+      setComposerError('제목과 내용을 모두 입력해 주세요.');
       return;
     }
     setComposerError(null);
@@ -173,7 +178,7 @@ const DecisionRoom: React.FC = () => {
       setComposerBody('');
       setComposerOpen(false);
     } catch (error) {
-      setComposerError('吏덈Ц ?깅줉???ㅽ뙣?덉뒿?덈떎. ?ㅼ떆 ?쒕룄?댁＜?몄슂.');
+      setComposerError('질문 등록에 실패했습니다. 다시 시도해 주세요.');
     }
   }, [composerBody, composerTitle]);
 
@@ -181,7 +186,7 @@ const DecisionRoom: React.FC = () => {
     if (!isAdmin) return;
     if (!selectedPostId) return;
     if (!replyText.trim()) {
-      setReplyError('?듬? ?댁슜???낅젰?댁＜?몄슂.');
+      setReplyError('답변 내용을 입력해 주세요.');
       return;
     }
     setReplyError(null);
@@ -205,7 +210,7 @@ const DecisionRoom: React.FC = () => {
       );
       setReplyText('');
     } catch (error) {
-      setReplyError('?듬? ?깅줉 以?臾몄젣媛 諛쒖깮?덉뒿?덈떎.');
+      setReplyError('답변 등록 중 문제가 발생했습니다.');
     }
   }, [isAdmin, replyText, selectedPostId]);
 
@@ -232,15 +237,15 @@ const DecisionRoom: React.FC = () => {
           <div className="glass-panel rounded-3xl p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-2xl font-light serif text-white mb-2">Strategic Bulletins</h3>
+                <h3 className="text-2xl font-light serif text-white mb-2">Notices</h3>
                 <p className="text-xs text-slate-500 uppercase tracking-widest">
                   {bulletinMode === 'active'
-                    ? 'Active directives for company operations'
-                    : 'Archived directives & advisories'}
+                    ? '최근 공지사항'
+                    : '전체 공지사항'}
                 </p>
               </div>
               <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                {bulletinMode === 'active' ? 'LIVE FEED' : 'ARCHIVE'}
+                {bulletinMode === 'active' ? 'RECENT' : 'ARCHIVE'}
               </div>
             </div>
 
@@ -249,7 +254,7 @@ const DecisionRoom: React.FC = () => {
               error={errorBulletins}
               empty={!isLoadingBulletins && !errorBulletins && bulletins.length === 0}
               onRetry={loadBulletins}
-              emptyMessage="怨듭??ы빆??以鍮꾨릺硫????곸뿭???쒖떆?⑸땲??"
+              emptyMessage="공시 사항이 준비되면 여기에 표시됩니다."
             >
               <BulletinGrid bulletins={bulletins} onOpen={setSelectedBulletinId} />
             </AsyncState>
@@ -259,9 +264,6 @@ const DecisionRoom: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-light serif text-white mb-2">Company Q&amp;A</h3>
-                <p className="text-xs text-slate-500 uppercase tracking-widest">
-                  Collaborative threads with operations and compliance.
-                </p>
               </div>
               {!isAdmin && (
                 <button
@@ -298,7 +300,7 @@ const DecisionRoom: React.FC = () => {
                 error={errorQa}
                 empty={!isLoadingQa && !errorQa && qaPosts.length === 0}
                 onRetry={loadQaPosts}
-                emptyMessage="?깅줉??Q&A媛 ?놁뒿?덈떎. 吏덈Ц???묒꽦?대낫?몄슂."
+                emptyMessage="등록된 Q&A가 없습니다. 질문을 작성해 보세요."
               >
                 {isAdmin && (
                   <AdminAuthorPanel

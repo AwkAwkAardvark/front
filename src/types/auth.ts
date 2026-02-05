@@ -3,7 +3,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role?: string;
 }
 
 export interface AuthSession {
@@ -45,7 +45,7 @@ export interface RegisterRequest {
 }
 
 export interface RefreshTokenRequest {
-  refreshToken: string;
+  refreshToken?: string;
 }
 
 export interface RefreshTokenResponse {

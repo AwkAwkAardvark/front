@@ -4,7 +4,6 @@ import {
   AuthSession,
   AuthUser,
   LoginRequest,
-  RefreshTokenRequest,
   RefreshTokenResponse,
   RegisterRequest,
   SignupResponse,
@@ -15,7 +14,7 @@ const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === 'true';
 const SESSION_STORAGE_KEY = 'sentinel.auth.session';
 
 const getStoredSession = (): AuthSession | null => {
-  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+  const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as AuthSession;
@@ -26,28 +25,87 @@ const getStoredSession = (): AuthSession | null => {
 
 const storeSession = (session: AuthSession | null) => {
   if (!session) {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
     return;
   }
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
 };
 
-const buildMockUser = (email: string, name?: string, role: string = 'USER'): AuthUser => ({
+const buildMockUser = (email: string, name?: string): AuthUser => ({
   id: `user-${email}`,
   email,
   name: name ?? email.split('@')[0],
-  role,
 });
 
 export const getAuthToken = (): string | null => getStoredSession()?.token ?? null;
 
 export const getStoredUser = (): AuthUser | null => getStoredSession()?.user ?? null;
 
+export const updateStoredToken = (token: string) => {
+  const current = getStoredSession();
+  if (!current) return;
+  storeSession({ ...current, token });
+};
+
+export const clearStoredSession = () => {
+  storeSession(null);
+};
+
+const resolveBaseUrl = () => (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
+const buildUrl = (path: string): string => {
+  const baseUrl = resolveBaseUrl();
+  return path.startsWith('http') ? path : `${baseUrl}${path}`;
+};
+
+const isApiResponse = (payload: unknown): payload is { success: boolean; data: unknown } => {
+  if (typeof payload !== 'object' || payload === null) return false;
+  const record = payload as Record<string, unknown>;
+  return typeof record.success === 'boolean' && 'data' in record;
+};
+
+export const refreshAccessToken = async (): Promise<RefreshTokenResponse> => {
+  if (USE_MOCK_AUTH) {
+    const token = `mock-${Date.now()}`;
+    updateStoredToken(token);
+    return {
+      tokenType: 'Bearer',
+      accessToken: token,
+      expiresIn: 3600,
+      passwordExpired: false,
+    };
+  }
+
+  const response = await fetch(buildUrl('/api/auth/refresh'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('Token refresh failed');
+  }
+
+  const payload = (await response.json()) as unknown;
+  if (!response.ok) {
+    throw new Error('Token refresh failed');
+  }
+
+  if (isApiResponse(payload)) {
+    return payload.data as RefreshTokenResponse;
+  }
+
+  return payload as RefreshTokenResponse;
+};
+
 export const login = async (payload: LoginRequest): Promise<AuthSession> => {
   if (USE_MOCK_AUTH) {
     const session: AuthSession = {
       token: `mock-${Date.now()}`,
-      user: buildMockUser(payload.email, undefined, 'USER'),
+      user: buildMockUser(payload.email),
     };
     storeSession(session);
     return session;
@@ -73,7 +131,7 @@ export const register = async (payload: RegisterRequest): Promise<SignupResponse
   if (USE_MOCK_AUTH) {
     const session: AuthSession = {
       token: `mock-${Date.now()}`,
-      user: buildMockUser(payload.email, payload.name, 'USER'),
+      user: buildMockUser(payload.email, payload.name),
     };
     storeSession(session);
     return {
@@ -90,25 +148,10 @@ export const register = async (payload: RegisterRequest): Promise<SignupResponse
 
 export const logout = async (): Promise<void> => {
   if (USE_MOCK_AUTH) {
-    storeSession(null);
+    clearStoredSession();
     return;
   }
 
   await apiPost<void, Record<string, never>>('/api/auth/logout', {});
-  storeSession(null);
-};
-
-export const refreshAccessToken = async (
-  payload: RefreshTokenRequest
-): Promise<RefreshTokenResponse> => {
-  if (USE_MOCK_AUTH) {
-    return {
-      tokenType: 'Bearer',
-      accessToken: `mock-refresh-${Date.now()}`,
-      expiresIn: 1800,
-      passwordExpired: false,
-    };
-  }
-
-  return apiPost<RefreshTokenResponse, RefreshTokenRequest>('/api/auth/refresh', payload);
+  clearStoredSession();
 };

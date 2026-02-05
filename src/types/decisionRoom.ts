@@ -30,6 +30,7 @@ export interface QaReply {
 
 export interface QaPost {
   id: string;
+  userId?: string | number;
   title: string;
   body: string;
   author: string;
