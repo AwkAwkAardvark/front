@@ -58,6 +58,7 @@ export interface Company {
   riskLevel: RiskLevel;
   tags?: string[];
   updatedAt?: string;
+  kpi?: CompanyKpiMini;
 }
 
 export interface CompanyKpiSummary {

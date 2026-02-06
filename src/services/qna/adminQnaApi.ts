@@ -7,19 +7,15 @@ let lastFallback = false;
 
 export const adminQnaApi = {
   listPosts: async (): Promise<QaPost[]> => {
-    lastFallback = false;
+    lastFallback = true;
     try {
-      return await apiGet<QaPost[]>(ADMIN_QNA_BASE);
+      await apiGet<QaPost[]>(ADMIN_QNA_BASE);
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        const status = error.apiError?.status;
-        if (status === 401 || status === 403 || status === 500) {
-          lastFallback = true;
-          return getMockQaPostsForAdmin();
-        }
+        // ignore API errors for now and use mock data
       }
-      throw error;
     }
+    return getMockQaPostsForAdmin();
   },
 
   addReply: async (postId: string, input: QaReplyInput): Promise<QaReply> =>

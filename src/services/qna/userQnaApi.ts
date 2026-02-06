@@ -8,21 +8,17 @@ let lastFallback = false;
 
 export const userQnaApi = {
   listPosts: async (): Promise<QaPost[]> => {
-    lastFallback = false;
+    const currentUser = getStoredUser();
+    const fallbackUserId = currentUser?.id ?? 'mock-user';
+    lastFallback = true;
     try {
-      return await apiGet<QaPost[]>(USER_QNA_BASE);
+      await apiGet<QaPost[]>(USER_QNA_BASE);
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        const status = error.apiError?.status;
-        if (status === 401 || status === 403 || status === 500) {
-          const currentUser = getStoredUser();
-          const fallbackUserId = currentUser?.id ?? 'mock-user';
-          lastFallback = true;
-          return getMockQaPostsForUser(fallbackUserId);
-        }
+        // ignore API errors for now and use mock data
       }
-      throw error;
     }
+    return getMockQaPostsForUser(fallbackUserId);
   },
 
   createPost: async (input: QaPostInput): Promise<QaPost> =>
