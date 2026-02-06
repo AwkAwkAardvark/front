@@ -2,10 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { CompanySummary } from '../../types/company';
 import {
-  formatCompanyRevenue,
+  getCompanyExternalHealthScore,
   getCompanyHealthScore,
-  getCompanyRevenue,
-  getCompanyStatusLabel,
+  getCompanyStatusFromHealth,
+  getHealthTone,
 } from '../../utils/companySelectors';
 
 interface CompaniesTableProps {
@@ -27,17 +27,19 @@ const CompaniesTable: React.FC<CompaniesTableProps> = ({ companies, onSelect }) 
           <tr>
             <th className="px-6 py-4">협력사</th>
             <th className="px-6 py-4">산업군</th>
-            <th className="px-6 py-4">건강도</th>
-            <th className="px-6 py-4">연 매출</th>
+            <th className="px-6 py-4">내부 건강도</th>
+            <th className="px-6 py-4">외부 건강도</th>
             <th className="px-6 py-4">상태</th>
             <th className="px-6 py-4">상세</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
           {companies.map((company) => {
-            const statusLabel = getCompanyStatusLabel(company.riskLevel);
             const healthScore = getCompanyHealthScore(company);
-            const revenue = getCompanyRevenue(company);
+            const healthTone = getHealthTone(healthScore);
+            const statusLabel = getCompanyStatusFromHealth(healthScore);
+            const externalHealthScore = getCompanyExternalHealthScore(company);
+            const externalHealthTone = getHealthTone(externalHealthScore);
             return (
               <tr
                 key={company.id}
@@ -62,9 +64,9 @@ const CompaniesTable: React.FC<CompaniesTableProps> = ({ companies, onSelect }) 
                     <div className="w-24 bg-white/10 rounded-full h-1 overflow-hidden">
                       <div
                         className={`h-full ${
-                          healthScore >= 80
+                          healthTone === 'good'
                             ? 'bg-emerald-400'
-                            : healthScore >= 60
+                            : healthTone === 'warn'
                             ? 'bg-amber-400'
                             : 'bg-rose-400'
                         }`}
@@ -74,7 +76,21 @@ const CompaniesTable: React.FC<CompaniesTableProps> = ({ companies, onSelect }) 
                   </div>
                 </td>
                 <td className="px-6 py-5 text-sm text-slate-300">
-                  {formatCompanyRevenue(revenue)}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-300">{externalHealthScore}%</span>
+                    <div className="w-24 bg-white/10 rounded-full h-1 overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          externalHealthTone === 'good'
+                            ? 'bg-emerald-400'
+                            : externalHealthTone === 'warn'
+                            ? 'bg-amber-400'
+                            : 'bg-rose-400'
+                        }`}
+                        style={{ width: `${externalHealthScore}%` }}
+                      />
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-5">
                   <span

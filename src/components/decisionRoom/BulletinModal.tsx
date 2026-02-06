@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Bulletin } from '../../types/decisionRoom';
+import { getFileDownloadUrl } from '../../api/posts';
+import { getAuthToken } from '../../services/auth';
 
 interface BulletinModalProps {
   open: boolean;
@@ -15,6 +17,80 @@ const tagStyles: Record<string, string> = {
 };
 
 const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, onDelete }) => {
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const triggerDownload = (url: string, filename: string) => {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.rel = 'noopener noreferrer';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
+  const handleOpen = useCallback(async (link: { url: string; fileId?: number }) => {
+    setDownloadError(null);
+    if (link.fileId) {
+      setDownloadingId(link.fileId);
+      try {
+        const response = await getFileDownloadUrl(link.fileId);
+        if (response?.url) {
+          window.open(response.url, '_blank', 'noopener,noreferrer');
+        } else {
+          setDownloadError('다운로드 URL을 찾지 못했습니다.');
+        }
+      } catch (error) {
+        setDownloadError('파일 다운로드에 실패했습니다.');
+      } finally {
+        setDownloadingId(null);
+      }
+      return;
+    }
+    if (link.url) {
+      window.open(link.url, '_blank', 'noopener,noreferrer');
+    }
+  }, []);
+
+  const handleDownload = useCallback(
+    async (link: { url: string; fileId?: number; label?: string }) => {
+      setDownloadError(null);
+      const filename = link.label ?? 'attachment';
+
+      if (link.fileId) {
+        setDownloadingId(link.fileId);
+        try {
+          const response = await getFileDownloadUrl(link.fileId);
+          const url = response?.url;
+          if (!url) {
+            throw new Error('download url missing');
+          }
+
+          const downloadResponse = await fetch(url);
+          if (!downloadResponse.ok) {
+            throw new Error('download failed');
+          }
+
+          const blob = await downloadResponse.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          triggerDownload(objectUrl, filename);
+          URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+          setDownloadError('파일 다운로드에 실패했습니다.');
+        } finally {
+          setDownloadingId(null);
+        }
+        return;
+      }
+
+      if (link.url) {
+        triggerDownload(link.url, filename);
+      }
+    },
+    [],
+  );
+
   if (!open || !bulletin) return null;
 
   return (
@@ -66,15 +142,29 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
               <span className="text-slate-500">첨부 문서가 없습니다.</span>
             )}
             {(bulletin.links ?? []).map((link) => (
-              <button
+              <div
                 key={link.label}
-                type="button"
-                className="flex items-center justify-between px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-white/30 transition"
+                className="flex items-center justify-between gap-3 px-4 py-2 rounded-lg bg-white/5 border border-white/10"
               >
-                <span>{link.label}</span>
-                <i className="fas fa-external-link-alt text-xs text-slate-500"></i>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpen(link)}
+                  disabled={Boolean(link.fileId && downloadingId === link.fileId)}
+                  className="flex-1 text-left text-sm text-slate-300 hover:text-white transition"
+                >
+                  {link.label}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownload(link)}
+                  disabled={Boolean(link.fileId && downloadingId === link.fileId)}
+                  className="px-3 py-1 rounded-full border border-white/10 text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:bg-white/10 transition"
+                >
+                  다운로드
+                </button>
+              </div>
             ))}
+            {downloadError && <span className="text-rose-400 text-xs">{downloadError}</span>}
           </div>
         </div>
 

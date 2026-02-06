@@ -22,11 +22,12 @@ const AiCommentaryCard: React.FC<AiCommentaryCardProps> = ({
     bulletItems.length > 0
       ? bulletItems
       : ['최근 30일 핵심 지표 변화를 기반으로 분석을 준비합니다.'];
+  const displayCommentary = commentary.trim().length > 0 ? commentary : fallbackSummary;
 
   if (variant === 'embedded') {
     return (
       <div
-        className={`rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur ${className ?? ''}`}
+        className={`flex h-[500px] flex-col rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur ${className ?? ''}`}
       >
         <div className="mb-3 flex items-center gap-2">
           <i className="fas fa-brain text-slate-500"></i>
@@ -34,16 +35,18 @@ const AiCommentaryCard: React.FC<AiCommentaryCardProps> = ({
             AI 분석 코멘트
           </span>
         </div>
-        <p className="text-sm leading-relaxed text-slate-200 line-clamp-3">
-          {fallbackSummary}
-        </p>
-        <ul className="mt-3 list-disc space-y-1 pl-4 text-[11px] text-slate-400">
-          {fallbackBullets.slice(0, 2).map((item) => (
-            <li key={item} className="line-clamp-2">
-              {item}
-            </li>
-          ))}
-        </ul>
+        <div className="flex-1 overflow-y-auto pr-2">
+          <p className="text-sm leading-relaxed text-slate-200 whitespace-pre-line">
+            {displayCommentary}
+          </p>
+          {commentary.trim().length === 0 && (
+            <ul className="mt-3 list-disc space-y-1 pl-4 text-[11px] text-slate-400">
+              {fallbackBullets.slice(0, 2).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     );
   }

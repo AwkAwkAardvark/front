@@ -37,7 +37,6 @@ export interface KpiCardDto {
 
 export interface CompanyKpiMini {
   networkHealth?: number;
-  annualRevenue?: number;
   reputationScore?: number;
 }
 

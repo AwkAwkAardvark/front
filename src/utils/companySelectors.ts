@@ -25,23 +25,29 @@ export const getCompanyStatusLabel = (riskLevel: RiskLevel): string => {
   }
 };
 
+export const getCompanyStatusFromHealth = (score: number): string => {
+  const tone = getHealthTone(score);
+  if (tone === 'good') return '정상';
+  if (tone === 'warn') return '주의';
+  return '위험';
+};
+
 export const getCompanyHealthScore = (company: CompanySummary): number =>
   company.kpi?.networkHealth ?? company.overallScore ?? 0;
 
-export const getCompanyRevenue = (company: CompanySummary): number =>
-  company.kpi?.annualRevenue ?? 0;
+export const getHealthTone = (score: number): 'good' | 'warn' | 'risk' => {
+  if (score >= 60) return 'good';
+  if (score >= 30) return 'warn';
+  return 'risk';
+};
+
+export const getCompanyExternalHealthScore = (company: CompanySummary): number =>
+  company.kpi?.reputationScore ?? 0;
 
 export const getMetricValue = (metrics: MetricItem[] | undefined, key: string): number | null => {
   if (!metrics) return null;
   const metric = metrics.find((item) => item.key === key);
   return metric?.value ?? null;
-};
-
-export const formatCompanyRevenue = (value: number): string => {
-  if (value >= 10000) {
-    return `1조 ${(value - 10000).toLocaleString('ko-KR')}억`;
-  }
-  return `${value.toLocaleString('ko-KR')}억`;
 };
 
 export const toMetricForecast = (forecast?: ForecastResponse) => {

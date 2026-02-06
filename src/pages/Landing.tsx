@@ -1,11 +1,11 @@
-﻿// 애플리케이션 랜딩 페이지
+// 애플리케이션 랜딩 페이지
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiRequestError } from '../src/api/client';
-import { getStoredUser, login, logout, register } from '../src/services/auth';
-import TurnstileWidget from '../src/components/TurnstileWidget';
-import SuccessModal from '../src/components/common/SuccessModal';
+import { ApiRequestError } from '../api/client';
+import { getStoredUser, login, logout, register } from '../services/auth';
+import TurnstileWidget from '../components/TurnstileWidget';
+import SuccessModal from '../components/common/SuccessModal';
 
 type AuthMode = 'login' | 'register';
 
@@ -29,7 +29,12 @@ const Landing: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string; name?: string; }>({});
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    name?: string;
+  }>({});
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -111,14 +116,7 @@ const Landing: React.FC = () => {
       const status =
         (error as { response?: { status?: number | string } })?.response?.status ??
         (error instanceof ApiRequestError ? error.apiError?.status : undefined);
-      const statusCode =
-        typeof status === 'string'
-          ? Number(status)
-          : status;
-
-      console.log('status:', (error as { response?: { status?: number | string } })?.response?.status);
-      console.log('axios data:', (error as { response?: { data?: unknown } })?.response?.data);
-      console.log('message:', message);
+      const statusCode = typeof status === 'string' ? Number(status) : status;
 
       if (error instanceof ApiRequestError && error.apiError?.errors?.length) {
         error.apiError.errors.forEach((detail) => {
@@ -126,10 +124,7 @@ const Landing: React.FC = () => {
             fieldErrors[detail.field] = detail.message;
           }
         });
-        console.log('apiError:', error.apiError);
       }
-
-      console.log('fieldErrors:', fieldErrors);
 
       if (isRegister && (statusCode === 400 || statusCode === 401 || statusCode === 409)) {
         setTurnstileToken('');
@@ -141,8 +136,7 @@ const Landing: React.FC = () => {
 
       if (isRegister && statusCode === 409) {
         const duplicateMessage =
-          (error instanceof ApiRequestError && error.apiError?.message) ||
-          message;
+          (error instanceof ApiRequestError && error.apiError?.message) || message;
         setAuthError(null);
         setDuplicateEmailError(duplicateMessage ?? null);
         return;
@@ -151,7 +145,11 @@ const Landing: React.FC = () => {
           setServerFieldErrors(fieldErrors);
         }
         if (Object.keys(fieldErrors).length === 0) {
-          setAuthError(isRegister ? '회원가입에 실패했습니다. 다시 시도해 주세요.' : '이메일 또는 비밀번호가 일치하지 않습니다.');
+          setAuthError(
+            isRegister
+              ? '회원가입에 실패했습니다. 다시 시도해 주세요.'
+              : '이메일 또는 비밀번호가 일치하지 않습니다.',
+          );
         }
       }
     } finally {
@@ -160,7 +158,7 @@ const Landing: React.FC = () => {
   };
 
   const toggleAuthMode = () => {
-    setAuthMode(prev => prev === 'login' ? 'register' : 'login');
+    setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'));
     setErrors({});
     setServerFieldErrors({});
     setAuthError(null);
@@ -217,17 +215,17 @@ const Landing: React.FC = () => {
         confirmLabel="로그인으로 돌아가기"
         onConfirm={handleSignupSuccessConfirm}
       />
-      
+
       {/* Auth Portal Overlay */}
       {showAuth && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-2xl" 
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-2xl"
             onClick={() => setShowAuth(false)}
           ></div>
-          
+
           <div className="relative glass-panel w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500">
-            <button 
+            <button
               onClick={() => setShowAuth(false)}
               className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors"
             >
@@ -236,7 +234,7 @@ const Landing: React.FC = () => {
 
             <div className="text-center mb-10">
               <div className="w-12 h-12 border border-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <i className="fas fa-eye text-xs text-white"></i>
+                <i className="fas fa-eye text-xs text-white"></i>
               </div>
               <h2 className="text-3xl font-light serif mb-2">
                 {authMode === 'login' ? '로그인' : '회원가입'}
@@ -249,9 +247,11 @@ const Landing: React.FC = () => {
             <form onSubmit={handleAuthSubmit} className="space-y-5">
               {authMode === 'register' && (
                 <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                  <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">이름</label>
-                  <input 
-                    type="text" 
+                  <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
+                    이름
+                  </label>
+                  <input
+                    type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -259,18 +259,21 @@ const Landing: React.FC = () => {
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.name)}
                   />
-                  {errors.name && (
-                    <p className="text-xs text-red-400">{errors.name}</p>
-                  )}
+                  {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
                   {serverFieldErrors.name && (
-                    <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.name}</div>
-                  )}</div>
+                    <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">
+                      {serverFieldErrors.name}
+                    </div>
+                  )}
+                </div>
               )}
-              
+
               <div className="space-y-2 relative">
-                <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">이메일</label>
-                <input 
-                  type="email" 
+                <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
+                  이메일
+                </label>
+                <input
+                  type="email"
                   required
                   value={email}
                   onChange={(e) => {
@@ -287,26 +290,24 @@ const Landing: React.FC = () => {
                   aria-describedby={duplicateEmailError ? 'duplicate-email-tooltip' : undefined}
                 />
                 {duplicateEmailError && (
-                  <p
-                    id="duplicate-email-tooltip"
-                    role="alert"
-                    className="text-xs text-red-400"
-                  >
+                  <p id="duplicate-email-tooltip" role="alert" className="text-xs text-red-400">
                     {duplicateEmailError}
                   </p>
                 )}
-                {errors.email && (
-                  <p className="text-xs text-red-400">{errors.email}</p>
-                )}
+                {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
                 {serverFieldErrors.email && (
-                  <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.email}</div>
+                  <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">
+                    {serverFieldErrors.email}
+                  </div>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">비밀번호</label>
-                <input 
-                  type="password" 
+                <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
+                  비밀번호
+                </label>
+                <input
+                  type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -314,18 +315,21 @@ const Landing: React.FC = () => {
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.password)}
                 />
-                {errors.password && (
-                  <p className="text-xs text-red-400">{errors.password}</p>
-                )}
+                {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
                 {serverFieldErrors.password && (
-                  <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.password}</div>
-                )}</div>
+                  <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">
+                    {serverFieldErrors.password}
+                  </div>
+                )}
+              </div>
 
               {authMode === 'register' && (
                 <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                  <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">비밀번호 확인</label>
-                  <input 
-                    type="password" 
+                  <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
+                    비밀번호 확인
+                  </label>
+                  <input
+                    type="password"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -337,8 +341,11 @@ const Landing: React.FC = () => {
                     <p className="text-xs text-red-400">{errors.confirmPassword}</p>
                   )}
                   {serverFieldErrors.confirmPassword && (
-                    <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">{serverFieldErrors.confirmPassword}</div>
-                  )}</div>
+                    <div className="mt-2 rounded-lg bg-red-500 text-black text-xs px-3 py-2">
+                      {serverFieldErrors.confirmPassword}
+                    </div>
+                  )}
+                </div>
               )}
 
               {authMode === 'register' && (
@@ -354,11 +361,9 @@ const Landing: React.FC = () => {
                 />
               )}
 
-              {authError && (
-                <p className="text-xs text-red-400">{authError}</p>
-              )}
+              {authError && <p className="text-xs text-red-400">{authError}</p>}
 
-              <button 
+              <button
                 type="submit"
                 className="w-full py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-xl mt-4 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isSubmitting || (authMode === 'register' && !turnstileToken)}
@@ -368,7 +373,7 @@ const Landing: React.FC = () => {
             </form>
 
             <div className="mt-8 pt-8 border-t border-white/5 text-center">
-              <button 
+              <button
                 onClick={toggleAuthMode}
                 className="w-full py-4 border border-white/10 text-slate-300 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 hover:text-white transition-all flex items-center justify-center space-x-2"
               >
@@ -381,18 +386,18 @@ const Landing: React.FC = () => {
       )}
 
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'py-4 bg-black/80 backdrop-blur-md border-b border-white/10' : 'py-8'}`}>
+      <nav
+        className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+          scrolled ? 'py-4 bg-black/80 backdrop-blur-md border-b border-white/10' : 'py-8'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-10 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="w-60 h-16">
-              <img
-                src="/img/logonobg.svg"
-                alt="SENTINEL 濡쒓퀬"
-                className="h-30 w-auto -translate-y-12"
-              />
+              <img src="/img/logonobg.svg" alt="SENTINEL 로고" className="h-30 w-auto -translate-y-12" />
             </div>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-10 text-[10px] uppercase tracking-[0.2em] font-medium text-slate-400">
             {isAuthenticated ? (
               <button
@@ -403,7 +408,10 @@ const Landing: React.FC = () => {
               </button>
             ) : (
               <button
-                onClick={() => { setAuthMode('login'); setShowAuth(true); }}
+                onClick={() => {
+                  setAuthMode('login');
+                  setShowAuth(true);
+                }}
                 className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-slate-200 transition-all"
               >
                 기업 로그인
@@ -429,9 +437,9 @@ const Landing: React.FC = () => {
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#050505] pointer-events-none"></div>
         </div>
-        
+
         <div className="relative z-10 fade-up flex flex-col items-center mb-12">
-          <button 
+          <button
             onClick={handleSentinelClick}
             className="btn-primary group !bg-white/10 !text-white !backdrop-blur-xl border border-white/20 px-12 py-5 hover:!bg-white hover:!text-black transition-all shadow-2xl"
           >
@@ -441,115 +449,165 @@ const Landing: React.FC = () => {
         </div>
 
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-4 opacity-60">
-               <span className="text-[9px] uppercase tracking-[0.5em] text-white">SCROLL</span>
-           <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent"></div>
+          <span className="text-[9px] uppercase tracking-[0.5em] text-white">SCROLL</span>
+          <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent"></div>
         </div>
       </section>
 
       {/* Research/Company Section */}
       <section className="py-32 px-10 border-t border-white/5">
-         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-            <div className="relative aspect-[4/3] rounded-sm overflow-hidden bg-slate-900">
-               <img src="/img/team.jpg" alt="팀 사진" className="w-full h-full object-cover translate-y-5 grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-1000" />
-               <div className="absolute inset-0 border-[20px] border-[#050505] pointer-events-none"></div>
-            </div>
-            <div>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div className="relative aspect-[4/3] rounded-sm overflow-hidden bg-slate-900">
+            <img
+              src="/img/team.jpg"
+              alt="팀 사진"
+              className="w-full h-full object-cover translate-y-5 grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-1000"
+            />
+            <div className="absolute inset-0 border-[20px] border-[#050505] pointer-events-none"></div>
+          </div>
+          <div>
             <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-6 flex items-center">
-                  <span className="w-2 h-2 bg-slate-400 mr-2"></span> Our Company
-               </div>
-               <h2 className="text-4xl md:text-5xl serif leading-tight mb-8">
-                 우리의<br/>
-                 <span className="italic text-slate-400">데이터</span>를 쓰고, <br/>
-                 간단하지만 강력한 인사이트로<br/>제공합니다.
-               </h2>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                  <p className="text-sm text-slate-500 leading-relaxed">전문가의 직관에 의존하던 의사결정을 데이터 기반 인사이트로 전환합니다.</p>
-                  <p className="text-sm text-slate-500 leading-relaxed">문제가 발생한 뒤가 아니라, 위험이 커지기 전에 신호를 포착합니다.</p>
-               </div>
-               <button className="flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white group">
-                  <span className="bg-white text-black p-4 rounded-full group-hover:bg-slate-200 transition-all">
-                    <i className="fas fa-plus"></i>
-                  </span>
-                  <span>문의하기</span>
-               </button>
+              <span className="w-2 h-2 bg-slate-400 mr-2"></span> Our Company
             </div>
-         </div>
+            <h2 className="text-4xl md:text-5xl serif leading-tight mb-8">
+              우리의
+              <br />
+              <span className="italic text-slate-400">데이터</span>를 쓰고, <br />
+              간단하지만 강력한 인사이트로
+              <br />
+              제공합니다.
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+              <p className="text-sm text-slate-500 leading-relaxed">
+                전문가의 직관에 의존하던 의사결정을 데이터 기반 인사이트로 전환합니다.
+              </p>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                문제가 발생한 뒤가 아니라, 위험이 커지기 전에 신호를 포착합니다.
+              </p>
+            </div>
+            <button className="flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white group">
+              <span className="bg-white text-black p-4 rounded-full group-hover:bg-slate-200 transition-all">
+                <i className="fas fa-plus"></i>
+              </span>
+              <span>문의하기</span>
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Newsroom Section */}
       <section className="py-32 px-10 border-t border-white/5 bg-white/[0.01]">
-         <div className="max-w-7xl mx-auto">
-            <div className="flex justify-between items-end mb-20">
-               <h2 className="text-6xl serif font-light">최신 인사이트</h2>
-               <button className="px-6 py-2 border border-white/20 rounded-full text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                 모든 뉴스 보기 <i className="fas fa-arrow-right ml-2"></i>
-               </button>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-end mb-20">
+            <h2 className="text-6xl serif font-light">최신 인사이트</h2>
+            <button className="px-6 py-2 border border-white/20 rounded-full text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
+              모든 뉴스 보기 <i className="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="md:col-span-2 group cursor-pointer">
+              <div className="aspect-video bg-slate-900 overflow-hidden mb-8">
+                <video
+                  src="/img/robot.mp4"
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-4">
+                <span>RECENT</span>
+                <span>2026.01.26</span>
+              </div>
+              <h3 className="text-3xl serif mb-4 group-hover:text-slate-300 transition-colors">
+                데이터 기반 통합 리스크 조기 경보
+              </h3>
+              <p className="text-slate-500 text-sm mb-6 max-w-xl">
+                수요 지표, 공급망, 외부 환경 데이터를 결합해 기업 위험 신호를 조기에 포착합니다.
+              </p>
+              <span className="text-[10px] uppercase tracking-widest font-bold border-b border-white/20 pb-1 group-hover:border-white transition-all">
+                기사 읽기
+              </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-               <div className="md:col-span-2 group cursor-pointer">
-                  <div className="aspect-video bg-slate-900 overflow-hidden mb-8">
-                    <video src="/img/robot.mp4" className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="auto"
-                     />
+            <div className="space-y-12">
+              {[
+                { date: '2025.12.18', title: '투자 리스크를 줄이는 공급망 확장 전략' },
+                { date: '2025.12.02', title: '사건 이후가 아닌 사전 위험 예측의 중요성' },
+                { date: '2025.11.21', title: 'AI 기반 기업 리스크 분석, 국내 적용 사례' },
+              ].map((item, i) => (
+                <div key={i} className="group cursor-pointer border-t border-white/10 pt-8">
+                  <div className="flex justify-between text-[9px] text-slate-600 uppercase tracking-[0.2em] mb-3">
+                    <span>뉴스</span>
+                    <span>{item.date}</span>
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest mb-4"><span>RECENT</span><span>2026.01.26</span></div>
-                  <h3 className="text-3xl serif mb-4 group-hover:text-slate-300 transition-colors">데이터 기반 통합 리스크 조기 경보</h3>
-                  <p className="text-slate-500 text-sm mb-6 max-w-xl">수요 지표, 공급망, 외부 환경 데이터를 결합해 기업 위험 신호를 조기에 포착합니다.</p>
-                  <span className="text-[10px] uppercase tracking-widest font-bold border-b border-white/20 pb-1 group-hover:border-white transition-all">기사 읽기</span>
-               </div>
-               <div className="space-y-12">
-                  {[
-                    { date: '2025.12.18', title: '투자 리스크를 줄이는 공급망 확장 전략' },
-                    { date: '2025.12.02', title: '사건 이후가 아닌 사전 위험 예측의 중요성' },
-                    { date: '2025.11.21', title: 'AI 기반 기업 리스크 분석, 국내 적용 사례' }
-                  ].map((item, i) => (
-                    <div key={i} className="group cursor-pointer border-t border-white/10 pt-8">
-                      <div className="flex justify-between text-[9px] text-slate-600 uppercase tracking-[0.2em] mb-3"><span>뉴스</span><span>{item.date}</span></div>
-                      <h4 className="text-xl serif leading-snug group-hover:text-slate-300 transition-colors">{item.title}</h4>
-                      <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity"><i className="fas fa-arrow-right text-xs"></i></div>
-                    </div>
-                  ))}
-               </div>
+                  <h4 className="text-xl serif leading-snug group-hover:text-slate-300 transition-colors">
+                    {item.title}
+                  </h4>
+                  <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i className="fas fa-arrow-right text-xs"></i>
+                  </div>
+                </div>
+              ))}
             </div>
-         </div>
+          </div>
+        </div>
       </section>
 
       {/* Final CTA Area */}
       <section className="py-40 px-10 relative overflow-hidden flex flex-col items-center text-center">
-         <div className="absolute inset-0 opacity-20 grayscale pointer-events-none">
-            <img src="/img/robot.jpg" className="w-full h-full object-cover" />
-         </div>
-         <div className="relative z-10 max-w-3xl">
-            <h2 className="text-4xl md:text-5xl serif leading-tight mb-12">우리의 기업 데이터는 불확실성을<br/>데이터 인텔리전스로<br/>해결합니다.</h2>
-            <button 
-              onClick={() => { setAuthMode('register'); setShowAuth(true); }}
-              className="inline-flex items-center space-x-4 group"
-            >
-               <span className="bg-white text-black w-14 h-14 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform"><i className="fas fa-plus"></i></span>
-               <span className="text-[13px] uppercase tracking-[0.3em] font-bold">CONTACT US</span>
-            </button>
-         </div>
+        <div className="absolute inset-0 opacity-20 grayscale pointer-events-none">
+          <img src="/img/robot.jpg" className="w-full h-full object-cover" />
+        </div>
+        <div className="relative z-10 max-w-3xl">
+          <h2 className="text-4xl md:text-5xl serif leading-tight mb-12">
+            우리의 기업 데이터는 불확실성을
+            <br />
+            데이터 인텔리전스로
+            <br />
+            해결합니다.
+          </h2>
+          <button
+            onClick={() => {
+              setAuthMode('register');
+              setShowAuth(true);
+            }}
+            className="inline-flex items-center space-x-4 group"
+          >
+            <span className="bg-white text-black w-14 h-14 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <i className="fas fa-plus"></i>
+            </span>
+            <span className="text-[13px] uppercase tracking-[0.3em] font-bold">CONTACT US</span>
+          </button>
+        </div>
       </section>
 
       {/* Big Branding Footer */}
       <footer className="pt-24 pb-12 px-10 bg-[#0a0a0a] border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 text-[10px] uppercase tracking-widest text-slate-500">
-             <div className="md:col-span-4"><p className="mb-4">© 2026 SENTINEL. All rights reserved.</p></div>
-             <div className="md:col-span-2 flex flex-col space-y-2">
-                <span className="text-white font-bold mb-2">둘러보기</span>
-                <a href="#" className="hover:text-white transition-colors">회사</a>
-                <a href="#" className="hover:text-white transition-colors">뉴스룸</a>
-             </div>
-             <div className="md:col-span-2 flex flex-col space-y-2">
-                <span className="text-white font-bold mb-2">연락처</span>
-                <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
-                <a href="#" className="hover:text-white transition-colors">X</a>
-             </div>
+            <div className="md:col-span-4">
+              <p className="mb-4">© 2026 SENTINEL. All rights reserved.</p>
+            </div>
+            <div className="md:col-span-2 flex flex-col space-y-2">
+              <span className="text-white font-bold mb-2">둘러보기</span>
+              <a href="#" className="hover:text-white transition-colors">
+                회사
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                뉴스룸
+              </a>
+            </div>
+            <div className="md:col-span-2 flex flex-col space-y-2">
+              <span className="text-white font-bold mb-2">연락처</span>
+              <a href="#" className="hover:text-white transition-colors">
+                LinkedIn
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                X
+              </a>
+            </div>
           </div>
         </div>
       </footer>
@@ -558,9 +616,3 @@ const Landing: React.FC = () => {
 };
 
 export default Landing;
-
-
-
-
-
-
