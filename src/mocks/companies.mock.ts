@@ -16,7 +16,7 @@ export const INITIAL_COMPANIES: CompanySummary[] = [
     overallScore: 92,
     riskLevel: 'SAFE',
     lastUpdatedAt: '2024-11-01',
-    kpi: { networkHealth: 92, annualRevenue: 4200, reputationScore: 92 },
+    kpi: { networkHealth: 92, reputationScore: 92 },
   },
   {
     id: 'c-002',
@@ -25,7 +25,7 @@ export const INITIAL_COMPANIES: CompanySummary[] = [
     overallScore: 88,
     riskLevel: 'SAFE',
     lastUpdatedAt: '2024-11-02',
-    kpi: { networkHealth: 88, annualRevenue: 1800, reputationScore: 89 },
+    kpi: { networkHealth: 88, reputationScore: 89 },
   },
   {
     id: 'c-003',
@@ -34,7 +34,7 @@ export const INITIAL_COMPANIES: CompanySummary[] = [
     overallScore: 45,
     riskLevel: 'RISK',
     lastUpdatedAt: '2024-10-28',
-    kpi: { networkHealth: 45, annualRevenue: 900, reputationScore: 54 },
+    kpi: { networkHealth: 45, reputationScore: 54 },
   },
   {
     id: 'c-004',
@@ -43,7 +43,7 @@ export const INITIAL_COMPANIES: CompanySummary[] = [
     overallScore: 78,
     riskLevel: 'SAFE',
     lastUpdatedAt: '2024-10-30',
-    kpi: { networkHealth: 78, annualRevenue: 12500, reputationScore: 86 },
+    kpi: { networkHealth: 78, reputationScore: 86 },
   },
   {
     id: 'c-005',
@@ -52,7 +52,7 @@ export const INITIAL_COMPANIES: CompanySummary[] = [
     overallScore: 62,
     riskLevel: 'WARN',
     lastUpdatedAt: '2024-11-03',
-    kpi: { networkHealth: 62, annualRevenue: 2100, reputationScore: 68 },
+    kpi: { networkHealth: 62, reputationScore: 68 },
   },
 ];
 
