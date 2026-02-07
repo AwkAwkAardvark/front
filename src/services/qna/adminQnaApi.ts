@@ -42,15 +42,24 @@ const toQaPost = (post: PostResponse): QaPost => {
 
 export const adminQnaApi = {
   listPosts: async (): Promise<QaPost[]> => {
-    lastFallback = true;
     try {
-      await apiGet(ADMIN_QNA_BASE, { page: 1, size: 50 });
+      const response = await apiGet<PostResponse[] | { content?: PostResponse[] }>(
+        ADMIN_QNA_BASE,
+        { page: 1, size: 50 },
+      );
+      const items = Array.isArray(response) ? response : response.content ?? [];
+      lastFallback = false;
+      return items.map((item) => toQaPost(item));
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        // ignore API errors for now and use mock data
+        const status = error.apiError?.status;
+        if (status === 401 || status === 403 || status === 500) {
+          lastFallback = true;
+          return getMockQaPostsForAdmin();
+        }
       }
+      throw error;
     }
-    return getMockQaPostsForAdmin();
   },
 
   addReply: async (postId: string, input: QaReplyInput): Promise<QaReply> =>
