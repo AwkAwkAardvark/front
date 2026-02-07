@@ -48,6 +48,8 @@ const MetricForecastChartPanel: React.FC<MetricForecastChartPanelProps> = ({
     metricSeries[0]?.key ?? '',
   );
   const [selectedNews, setSelectedNews] = useState<CompanyInsightItem | null>(null);
+  const [isCommentaryOpen, setIsCommentaryOpen] = useState(true);
+  const [isReportOpen, setIsReportOpen] = useState(true);
 
   useEffect(() => {
     if (!metricSeries.length) {
@@ -197,8 +199,14 @@ const MetricForecastChartPanel: React.FC<MetricForecastChartPanelProps> = ({
       <AiCommentaryCard
         commentary={commentary}
         variant="embedded"
+        isOpen={isCommentaryOpen}
+        onToggle={() => setIsCommentaryOpen((prev) => !prev)}
       />
-      <ReportSummaryCard summary={reportSummary} />
+      <ReportSummaryCard
+        summary={reportSummary}
+        isOpen={isReportOpen}
+        onToggle={() => setIsReportOpen((prev) => !prev)}
+      />
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
