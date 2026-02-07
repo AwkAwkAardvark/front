@@ -273,6 +273,31 @@ paths:
         '201':
           description: Update request created successfully
 
+  /admin/posts/qna/{postId}/replies:
+    post:
+      tags: [Posts]
+      summary: QnA reply creation (admin)
+      description: Creates a reply for a QnA post as an administrator.
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QaReplyInput'
+      responses:
+        '200':
+          description: Reply created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QaReplyResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -531,6 +556,42 @@ components:
         message:
           type: string
       required: [message]
+
+    QaReplyInput:
+      type: object
+      properties:
+        body:
+          type: string
+        author:
+          type: string
+      required: [body, author]
+
+    QaReplyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "r-100"
+            author:
+              type: string
+              example: "관리자명"
+            createdAt:
+              type: string
+              example: "2026-02-07T10:30:00"
+            body:
+              type: string
+              example: "답변 내용"
+        error:
+          type: object
+          nullable: true
+        timestamp:
+          type: string
 
     CompanyInsightItem:
       type: object

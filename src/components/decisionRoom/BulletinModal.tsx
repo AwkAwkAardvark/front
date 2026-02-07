@@ -61,13 +61,12 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
       if (link.fileId) {
         setDownloadingId(link.fileId);
         try {
-          const response = await getFileDownloadUrl(link.fileId);
-          const url = response?.url;
-          if (!url) {
-            throw new Error('download url missing');
-          }
-
-          const downloadResponse = await fetch(url);
+          const token = getAuthToken();
+          const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+          const apiUrl = `${baseUrl}/api/files/${link.fileId}`;
+          const downloadResponse = await fetch(apiUrl, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
           if (!downloadResponse.ok) {
             throw new Error('download failed');
           }
