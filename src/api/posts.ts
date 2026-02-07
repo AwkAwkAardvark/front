@@ -1,5 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from './client';
 import {
+  AdminPostCreateRequest,
+  AdminPostUpdateRequest,
   PostCreateRequest,
   PostFileItem,
   PostItem,
@@ -45,6 +47,41 @@ export const deletePost = async (
   postId: number | string,
 ): Promise<string> => {
   return apiDelete<string>(`/api/posts/${categoryName}/${postId}`);
+};
+
+export const listAdminPosts = async (
+  categoryName: string,
+  params?: PostListParams,
+): Promise<PostListData> => {
+  return apiGet<PostListData>(`/api/admin/posts/${categoryName}`, params);
+};
+
+export const createAdminPost = async (
+  categoryName: string,
+  payload: AdminPostCreateRequest,
+): Promise<PostItem> => {
+  return apiPost<PostItem, AdminPostCreateRequest>(
+    `/api/admin/posts/${categoryName}`,
+    payload,
+  );
+};
+
+export const updateAdminPost = async (
+  categoryName: string,
+  postId: number | string,
+  payload: AdminPostUpdateRequest,
+): Promise<PostItem> => {
+  return apiPatch<PostItem, AdminPostUpdateRequest>(
+    `/api/admin/posts/${categoryName}/${postId}`,
+    payload,
+  );
+};
+
+export const deleteAdminPost = async (
+  categoryName: string,
+  postId: number | string,
+): Promise<string> => {
+  return apiDelete<string>(`/api/admin/posts/${categoryName}/${postId}`);
 };
 
 export const listPostFiles = async (postId: number | string): Promise<PostFileItem[]> => {

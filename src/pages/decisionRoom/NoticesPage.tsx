@@ -4,7 +4,18 @@ import BulletinGrid from '../../components/decisionRoom/BulletinGrid';
 import BulletinModal from '../../components/decisionRoom/BulletinModal';
 import AsyncState from '../../components/common/AsyncState';
 import { Bulletin } from '../../types/decisionRoom';
-import { createPost, deletePost, listPostFiles, listPosts, updatePost, uploadPostFiles } from '../../api/posts';
+import {
+  createAdminPost,
+  createPost,
+  deleteAdminPost,
+  deletePost,
+  listAdminPosts,
+  listPostFiles,
+  listPosts,
+  updateAdminPost,
+  updatePost,
+  uploadPostFiles,
+} from '../../api/posts';
 import { PostFileItem, PostItem } from '../../types/post';
 import { getStoredUser } from '../../services/auth';
 
@@ -39,7 +50,7 @@ const NoticesPage: React.FC = () => {
     if (mb < 1024) return `${mb.toFixed(1)}MB`;
     const gb = mb / 1024;
     return `${gb.toFixed(1)}GB`;
-  }, []);
+  }, [isAdmin]);
 
   const loadNoticeFiles = useCallback(async (postId: string) => {
     setIsLoadingFiles(true);
@@ -59,12 +70,19 @@ const NoticesPage: React.FC = () => {
     setErrorNotices(null);
 
     try {
-      const response = await listPosts('notices', {
-        page: 1,
-        size: 50,
-        sortBy: 'createdAt',
-        direction: 'DESC',
-      });
+      const response = isAdmin
+        ? await listAdminPosts('notices', {
+            page: 1,
+            size: 50,
+            sortBy: 'createdAt',
+            direction: 'DESC',
+          })
+        : await listPosts('notices', {
+            page: 1,
+            size: 50,
+            sortBy: 'createdAt',
+            direction: 'DESC',
+          });
       setPosts(response.content);
     } catch (error) {
       setErrorNotices('공지 데이터를 불러오는 중 문제가 발생했습니다.');
@@ -211,10 +229,17 @@ const NoticesPage: React.FC = () => {
 
     try {
       if (editingPost) {
-        const updated = await updatePost('notices', editingPost.id, {
-          title: editorTitle.trim(),
-          content: editorContent.trim(),
-        });
+        const updated = isAdmin
+          ? await updateAdminPost('notices', editingPost.id, {
+              title: editorTitle.trim(),
+              content: editorContent.trim(),
+              isPinned: editingPost.isPinned,
+              status: editingPost.status,
+            })
+          : await updatePost('notices', editingPost.id, {
+              title: editorTitle.trim(),
+              content: editorContent.trim(),
+            });
         setPosts((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         );
@@ -224,10 +249,17 @@ const NoticesPage: React.FC = () => {
           await loadNoticeFiles(String(updated.id));
         }
       } else {
-        const created = await createPost('notices', {
-          title: editorTitle.trim(),
-          content: editorContent.trim(),
-        });
+        const created = isAdmin
+          ? await createAdminPost('notices', {
+              title: editorTitle.trim(),
+              content: editorContent.trim(),
+              isPinned: false,
+              status: 'PUBLISHED',
+            })
+          : await createPost('notices', {
+              title: editorTitle.trim(),
+              content: editorContent.trim(),
+            });
         setPosts((prev) => [created, ...prev]);
         setSelectedNoticeId(String(created.id));
         if (editorFiles.length > 0) {
@@ -245,7 +277,11 @@ const NoticesPage: React.FC = () => {
     if (!selectedNoticeId) return;
     if (!window.confirm('이 공지를 삭제하시겠습니까?')) return;
     try {
-      await deletePost('notices', selectedNoticeId);
+      if (isAdmin) {
+        await deleteAdminPost('notices', selectedNoticeId);
+      } else {
+        await deletePost('notices', selectedNoticeId);
+      }
       setPosts((prev) => prev.filter((item) => String(item.id) !== selectedNoticeId));
       setSelectedNoticeId(null);
     } catch (error) {

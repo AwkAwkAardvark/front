@@ -30,15 +30,27 @@ export interface PostListParams extends Record<string, string | number | boolean
 }
 
 export interface PostCreateRequest {
-  categoryId: number;
   title: string;
   content: string;
 }
 
 export interface PostUpdateRequest {
-  categoryId: number;
+  title?: string;
+  content?: string;
+}
+
+export interface AdminPostCreateRequest {
   title: string;
   content: string;
+  isPinned?: boolean;
+  status?: 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | string;
+}
+
+export interface AdminPostUpdateRequest {
+  title?: string;
+  content?: string;
+  isPinned?: boolean;
+  status?: 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | string;
 }
 
 export interface PostFileItem {
