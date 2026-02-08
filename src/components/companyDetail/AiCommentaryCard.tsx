@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface AiCommentaryCardProps {
   commentary: string;
@@ -15,6 +15,8 @@ const AiCommentaryCard: React.FC<AiCommentaryCardProps> = ({
   isOpen = true,
   onToggle,
 }) => {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [maxHeight, setMaxHeight] = useState('0px');
   const lines = commentary
     .split('\n')
     .map((line) => line.trim())
@@ -29,9 +31,14 @@ const AiCommentaryCard: React.FC<AiCommentaryCardProps> = ({
   const displayCommentary = commentary.trim().length > 0 ? commentary : fallbackSummary;
 
   if (variant === 'embedded') {
+    useEffect(() => {
+      const height = contentRef.current?.scrollHeight ?? 0;
+      setMaxHeight(isOpen ? `${height}px` : '0px');
+    }, [commentary, isOpen]);
+
     return (
       <div
-        className={`flex ${isOpen ? 'h-[380px]' : 'h-auto'} flex-col rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur ${className ?? ''}`}
+        className={`flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur ${className ?? ''}`}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -51,8 +58,11 @@ const AiCommentaryCard: React.FC<AiCommentaryCardProps> = ({
             </button>
           )}
         </div>
-        {isOpen && (
-          <div className="flex-1 overflow-y-auto pr-2">
+        <div
+          className="overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
+          style={{ maxHeight, opacity: isOpen ? 1 : 0 }}
+        >
+          <div ref={contentRef} className="max-h-[380px] overflow-y-auto pr-2">
             <p className="text-base leading-relaxed text-slate-200 whitespace-pre-line">
               {displayCommentary}
             </p>
@@ -64,7 +74,7 @@ const AiCommentaryCard: React.FC<AiCommentaryCardProps> = ({
               </ul>
             )}
           </div>
-        )}
+        </div>
       </div>
     );
   }
