@@ -36,36 +36,48 @@ export const listCompanies = async (params?: {
   page?: number;
   size?: number;
   sort?: string;
+  userId?: string;
 }): Promise<CompanySummary[]> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
   return apiGet<CompanySummary[]>('/api/companies', params);
 };
 
-export const getCompanySummary = async (companyId: string): Promise<CompanySummary> => {
+export const getCompanySummary = async (
+  companyId: string,
+  params?: { userId?: string },
+): Promise<CompanySummary> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<CompanySummary>(`/api/companies/${companyId}`);
+  return apiGet<CompanySummary>(`/api/companies/${companyId}`, params);
 };
 
-export const getCompanyOverview = async (companyId: string): Promise<CompanyOverview> => {
+export const getCompanyOverview = async (
+  companyId: string,
+  params?: { userId?: string },
+): Promise<CompanyOverview> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<CompanyOverview>(`/api/companies/${companyId}/overview`);
+  return apiGet<CompanyOverview>(`/api/companies/${companyId}/overview`, params);
 };
 
 export const getCompanyInsights = async (
   companyId: string,
+  params?: { userId?: string },
 ): Promise<CompanyInsightItem[]> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<CompanyInsightItem[]>(`/api/companies/${companyId}/insights`);
+  return apiGet<CompanyInsightItem[]>(`/api/companies/${companyId}/insights`, params);
 };
 
-export const getDashboardSummary = async (): Promise<DashboardSummary> => {
+export const getDashboardSummary = async (params?: {
+  userId?: string;
+}): Promise<DashboardSummary> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<DashboardSummary>('/api/dashboard/summary');
+  return apiGet<DashboardSummary>('/api/dashboard/summary', params);
 };
 
-export const getDashboardRiskRecords = async (
-  params?: { range?: string; limit?: number }
-): Promise<CompanyQuarterRisk[]> => {
+export const getDashboardRiskRecords = async (params?: {
+  range?: string;
+  limit?: number;
+  userId?: string;
+}): Promise<CompanyQuarterRisk[]> => {
   return apiGet<CompanyQuarterRisk[]>('/api/dashboard/risk-records', params);
 };
 

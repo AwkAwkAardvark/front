@@ -5,15 +5,24 @@ import AsyncState from '../../components/common/AsyncState';
 import CompanyQuickViewDrawer from '../../components/companies/CompanyQuickViewDrawer';
 import CompaniesHeader from '../../components/companies/CompaniesHeader';
 import CompaniesTable from '../../components/companies/CompaniesTable';
-import { logout } from '../../services/auth';
+import { logout, getStoredUser } from '../../services/auth';
 import { getCompanyInsights, getCompanyOverview, listCompanies } from '../../api/companies';
 import {
   getMockCompanyInsights,
   getMockCompanyOverview,
   INITIAL_COMPANIES,
 } from '../../mocks/companies.mock';
+import {
+  fetchAdminViewUsers,
+  getAdminViewUsers,
+  getStoredAdminViewUser,
+  isAdminUser,
+  resolveAdminViewUserId,
+  setStoredAdminViewUser,
+} from '../../services/adminView';
 import { useCompaniesStore } from '../../store/companiesStore';
 import { CompanyInsightItem, CompanyOverview, CompanySummary } from '../../types/company';
+import { AdminViewUser } from '../../types/adminView';
 
 const CompaniesPage: React.FC = () => {
   // TODO(API 연결):
@@ -22,6 +31,14 @@ const CompaniesPage: React.FC = () => {
   // - PROCESSING 상태 처리 로직 활성화
   const navigate = useNavigate();
   const { companies, setCompanies } = useCompaniesStore();
+  const currentUser = getStoredUser();
+  const isAdmin = isAdminUser(currentUser);
+  const [adminUsers, setAdminUsers] = useState<AdminViewUser[]>([]);
+  const [adminUsersFallback, setAdminUsersFallback] = useState(false);
+  const [adminViewUser, setAdminViewUser] = useState<AdminViewUser | null>(() =>
+    getStoredAdminViewUser(),
+  );
+  const adminViewUserId = resolveAdminViewUserId(isAdmin, adminViewUser);
   const [searchValue, setSearchValue] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +68,7 @@ const CompaniesPage: React.FC = () => {
     setError(null);
     setFallbackMessage(null);
     try {
-      const response = await listCompanies();
+      const response = await listCompanies({ userId: adminViewUserId });
       setCompanies(response);
     } catch (err) {
       setCompanies(INITIAL_COMPANIES);
@@ -63,7 +80,28 @@ const CompaniesPage: React.FC = () => {
 
   useEffect(() => {
     void loadCompanies();
-  }, []);
+  }, [adminViewUserId]);
+
+  const loadAdminUsers = async () => {
+    if (!isAdmin) {
+      setAdminUsers([]);
+      setAdminUsersFallback(false);
+      return;
+    }
+
+    try {
+      const response = await fetchAdminViewUsers();
+      setAdminUsers(response);
+      setAdminUsersFallback(false);
+    } catch (error) {
+      setAdminUsers(getAdminViewUsers());
+      setAdminUsersFallback(true);
+    }
+  };
+
+  useEffect(() => {
+    void loadAdminUsers();
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!selectedCompany) {
@@ -76,7 +114,9 @@ const CompaniesPage: React.FC = () => {
       setDetailState({ isLoading: true, error: null, data: null });
       setInsightsState({ isLoading: true, error: null, data: [] });
       try {
-        const detail = await getCompanyOverview(selectedCompany.id);
+        const detail = await getCompanyOverview(selectedCompany.id, {
+          userId: adminViewUserId,
+        });
         setDetailState({ isLoading: false, error: null, data: detail });
       } catch (err) {
         const fallbackDetail = getMockCompanyOverview(selectedCompany.id);
@@ -85,7 +125,9 @@ const CompaniesPage: React.FC = () => {
       }
 
       try {
-        const response = await getCompanyInsights(selectedCompany.id);
+        const response = await getCompanyInsights(selectedCompany.id, {
+          userId: adminViewUserId,
+        });
         setInsightsState({ isLoading: false, error: null, data: response ?? [] });
       } catch (err) {
         const fallbackInsights = getMockCompanyInsights(selectedCompany.id);
@@ -94,7 +136,7 @@ const CompaniesPage: React.FC = () => {
     };
 
     void fetchDetail();
-  }, [selectedCompany]);
+  }, [selectedCompany, adminViewUserId]);
 
   const filteredCompanies = useMemo(() => {
     const keyword = searchValue.trim().toLowerCase();
@@ -114,6 +156,14 @@ const CompaniesPage: React.FC = () => {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onAddCompanyClick={() => navigate('/companies/add')}
+        showAdminSwitch={isAdmin && adminUsers.length > 0}
+        adminUsers={adminUsers}
+        selectedAdminUserId={adminViewUser?.id}
+        onAdminUserChange={(userId) => {
+          const nextUser = adminUsers.find((user) => user.id === userId) ?? null;
+          setAdminViewUser(nextUser);
+          setStoredAdminViewUser(nextUser);
+        }}
         onLogout={async () => {
           try {
             await logout();
@@ -124,6 +174,12 @@ const CompaniesPage: React.FC = () => {
           }
         }}
       />
+
+      {adminUsersFallback && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-6 py-4 text-sm text-amber-100">
+          사용자 목록 API 오류로 목 데이터를 표시하고 있어요.
+        </div>
+      )}
 
       <AsyncState
         isLoading={isLoading}

@@ -6,6 +6,12 @@ import MetricForecastChartPanel from '../../components/companyDetail/MetricForec
 import MetricsPanel from '../../components/companyDetail/MetricsPanel';
 import { getCompanyInsights, getCompanyOverview } from '../../api/companies';
 import { getMockCompanyInsights, getMockCompanyOverview } from '../../mocks/companies.mock';
+import { getStoredUser } from '../../services/auth';
+import {
+  getStoredAdminViewUser,
+  isAdminUser,
+  resolveAdminViewUserId,
+} from '../../services/adminView';
 import { CompanyInsightItem, CompanyOverview } from '../../types/company';
 import {
   getCompanyStatusFromHealth,
@@ -33,6 +39,12 @@ const CompanyDetailPage: React.FC = () => {
   const [detail, setDetail] = useState<CompanyOverview | null>(null);
   const [insights, setInsights] = useState<CompanyInsightItem[]>([]);
   const [insightsFallbackMessage, setInsightsFallbackMessage] = useState<string | null>(null);
+  const currentUser = getStoredUser();
+  const storedAdminViewUser = getStoredAdminViewUser();
+  const adminViewUserId = resolveAdminViewUserId(
+    isAdminUser(currentUser),
+    storedAdminViewUser,
+  );
 
   const loadDetail = async () => {
     if (!id) {
@@ -45,7 +57,7 @@ const CompanyDetailPage: React.FC = () => {
     setError(null);
     setFallbackMessage(null);
     try {
-      const response = await getCompanyOverview(id);
+      const response = await getCompanyOverview(id, { userId: adminViewUserId });
       setDetail(response);
     } catch (err) {
       const fallbackDetail = getMockCompanyOverview(id);
@@ -63,7 +75,7 @@ const CompanyDetailPage: React.FC = () => {
 
     setInsightsFallbackMessage(null);
     try {
-      const response = await getCompanyInsights(id);
+      const response = await getCompanyInsights(id, { userId: adminViewUserId });
       setInsights(response ?? []);
     } catch (err) {
       setInsights(getMockCompanyInsights(id));
@@ -74,7 +86,7 @@ const CompanyDetailPage: React.FC = () => {
   useEffect(() => {
     void loadDetail();
     void loadInsights();
-  }, [id]);
+  }, [id, adminViewUserId]);
 
   const healthScore = detail ? getCompanyHealthScore(detail.company) : 0;
   const statusLabel = detail ? getCompanyStatusFromHealth(healthScore) : '—';
@@ -177,9 +189,14 @@ const CompanyDetailPage: React.FC = () => {
                       {statusLabel}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-500">
-                    산업군 {detail.company.sector.label} · 기업 ID {detail.company.id}
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-slate-500">
+                    <span>산업군 {detail.company.sector.label} · 기업 ID {detail.company.id}</span>
+                    {storedAdminViewUser && isAdminUser(currentUser) && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300">
+                        보기: {storedAdminViewUser.name} · {storedAdminViewUser.email}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
