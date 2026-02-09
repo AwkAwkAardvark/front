@@ -77,7 +77,7 @@ const CompanyDetailPage: React.FC = () => {
     setInsightsFallbackMessage(null);
     try {
       const response = await getCompanyInsights(id, { userId: adminViewUserId });
-      setInsights(response ?? []);
+      setInsights(Array.isArray(response) ? response : []);
     } catch (err) {
       setInsights(getMockCompanyInsights(id));
       setInsightsFallbackMessage('인사이트 API 오류로 목 데이터를 표시하고 있어요.');

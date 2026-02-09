@@ -82,7 +82,8 @@ export const toMetricForecast = (forecast?: ForecastResponse) => {
     ALLOWED_METRIC_KEYS.map((key, index) => [key, index]),
   );
 
-  const normalizedSeries = forecast.metricSeries
+  const rawSeries = Array.isArray(forecast.metricSeries) ? forecast.metricSeries : [];
+  const normalizedSeries = rawSeries
     .map((series) => {
       const normalizedKey =
         METRIC_LABEL_MAP[series.key] ? series.key : LABEL_KEY_MAP[series.label] ?? series.key;
