@@ -112,10 +112,14 @@ const CompanyDetailPage: React.FC = () => {
       }
       return metric;
     })
-    ?.filter(
-      (metric) =>
-        metric.key !== 'EXTERNAL_REPUTATION' && metric.label !== '외부 기업 평판',
-    );
+    ?.filter((metric) => {
+      const label = metric.label?.replace(/\s+/g, '') ?? '';
+      const key = metric.key ?? '';
+      if (key.includes('REPUTATION')) return false;
+      if (label.includes('외부기업평판') || label.includes('외부평판')) return false;
+      if (label.includes('외부기업건강도')) return false;
+      return true;
+    });
   const metrics = toMetricCards(normalizedKeyMetrics);
   const signals = toSignalCards(detail?.signals);
 
