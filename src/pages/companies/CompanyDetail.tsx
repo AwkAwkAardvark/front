@@ -101,7 +101,7 @@ const CompanyDetailPage: React.FC = () => {
           ...metric,
           key: 'EXTERNAL_HEALTH',
           label: '외부 건강도',
-          value: detail.company.kpi?.reputationScore ?? detail.company.overallScore,
+        value: detail.company.kpi?.reputationScore ?? detail.company.overallScore,
           unit: '%',
           tooltip: {
             description: '외부 평판·시장 신호를 종합한 건강도 지표입니다.',
