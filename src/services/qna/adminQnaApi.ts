@@ -69,8 +69,28 @@ export const adminQnaApi = {
     }
   },
 
-  addReply: async (postId: string, input: QaReplyInput): Promise<QaReply> =>
-    apiPost<QaReply, QaReplyInput>(`${ADMIN_QNA_BASE}/${postId}/replies`, input),
+  addReply: async (postId: string, input: QaReplyInput): Promise<QaReply> => {
+    const response = await apiPost<
+      {
+        id: number | string;
+        name?: string;
+        postId?: number | string;
+        content?: string;
+        createdAt?: string;
+        updatedAt?: string;
+      },
+      { content: string }
+    >(`${ADMIN_QNA_BASE}/${postId}/replies`, {
+      content: input.body,
+    });
+
+    return {
+      id: String(response.id),
+      author: response.name ?? '관리자',
+      createdAt: response.createdAt ?? new Date().toISOString(),
+      body: response.content ?? input.body,
+    };
+  },
   deletePost: async (categoryName: string, postId: string | number): Promise<void> =>
     apiDelete<void>(`${ADMIN_POST_BASE}/${categoryName}/${postId}`),
   wasFallback: (): boolean => lastFallback,
