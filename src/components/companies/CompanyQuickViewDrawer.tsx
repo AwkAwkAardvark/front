@@ -50,11 +50,13 @@ const CompanyQuickViewDrawer: React.FC<CompanyQuickViewDrawerProps> = ({
         sector: summary.sector,
         overallScore: summary.overallScore,
         riskLevel: summary.riskLevel,
+        networkHealth: summary.networkHealth ?? null,
+        reputationScore: summary.reputationScore ?? null,
       }
     : null;
   const healthScore = summaryAsPreview ? getCompanyHealthScore(summaryAsPreview) : 0;
   const healthTone = getHealthTone(healthScore);
-  const externalHealthScore = summaryAsPreview?.kpi?.reputationScore ?? 0;
+  const externalHealthScore = summaryAsPreview?.reputationScore ?? 0;
   const externalHealthTone = getHealthTone(externalHealthScore);
   const statusLabel = summary ? getCompanyStatusFromHealth(healthScore) : '—';
 

@@ -33,7 +33,7 @@ export const getCompanyStatusFromHealth = (score: number): string => {
 };
 
 export const getCompanyHealthScore = (company: CompanySummary): number =>
-  company.kpi?.networkHealth ?? company.overallScore ?? 0;
+  company.networkHealth ?? company.kpi?.networkHealth ?? company.overallScore ?? 0;
 
 export const getHealthTone = (score: number): 'good' | 'warn' | 'risk' => {
   if (score >= 60) return 'good';
@@ -42,7 +42,7 @@ export const getHealthTone = (score: number): 'good' | 'warn' | 'risk' => {
 };
 
 export const getCompanyExternalHealthScore = (company: CompanySummary): number =>
-  company.kpi?.reputationScore ?? 0;
+  company.reputationScore ?? company.kpi?.reputationScore ?? 0;
 
 export const getMetricValue = (metrics: MetricItem[] | undefined, key: string): number | null => {
   if (!metrics) return null;

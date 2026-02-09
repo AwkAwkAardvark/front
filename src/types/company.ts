@@ -60,6 +60,8 @@ export interface Company {
   sector: Sector;
   overallScore: number;
   riskLevel: RiskLevel;
+  networkHealth?: number | null;
+  reputationScore?: number | null;
   tags?: string[];
   updatedAt?: string;
   kpi?: CompanyKpiMini;
