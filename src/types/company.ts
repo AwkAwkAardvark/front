@@ -56,6 +56,7 @@ export interface CompanySummary {
 export interface Company {
   id: string;
   name: string;
+  stockCode?: string | null;
   sector: Sector;
   overallScore: number;
   riskLevel: RiskLevel;

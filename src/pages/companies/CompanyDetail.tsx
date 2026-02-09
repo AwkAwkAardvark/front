@@ -4,7 +4,12 @@ import { Link, useParams } from 'react-router-dom';
 import AsyncState from '../../components/common/AsyncState';
 import MetricForecastChartPanel from '../../components/companyDetail/MetricForecastChartPanel';
 import MetricsPanel from '../../components/companyDetail/MetricsPanel';
-import { downloadCompanyAiReport, getCompanyInsights, getCompanyOverview } from '../../api/companies';
+import {
+  downloadCompanyAiReport,
+  getCompanyInsights,
+  getCompanyOverview,
+  requestCompanyAiReport,
+} from '../../api/companies';
 import { getMockCompanyInsights, getMockCompanyOverview } from '../../mocks/companies.mock';
 import { getStoredUser } from '../../services/auth';
 import {
@@ -40,6 +45,9 @@ const CompanyDetailPage: React.FC = () => {
   const [insights, setInsights] = useState<CompanyInsightItem[]>([]);
   const [insightsFallbackMessage, setInsightsFallbackMessage] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [isReportGenerating, setIsReportGenerating] = useState(false);
+  const [reportStatusMessage, setReportStatusMessage] = useState<string | null>(null);
+  const reportTimerRef = useRef<number | null>(null);
   const currentUser = getStoredUser();
   const storedAdminViewUser = getStoredAdminViewUser();
   const adminViewUserId = resolveAdminViewUserId(
@@ -88,6 +96,12 @@ const CompanyDetailPage: React.FC = () => {
     void loadDetail();
     void loadInsights();
   }, [id, adminViewUserId]);
+
+  useEffect(() => {
+    return () => {
+      clearReportTimer();
+    };
+  }, []);
 
   const healthScore = detail ? getCompanyHealthScore(detail.company) : 0;
   const statusLabel = detail ? getCompanyStatusFromHealth(healthScore) : '—';
@@ -155,6 +169,85 @@ const CompanyDetailPage: React.FC = () => {
     const year = now.getFullYear();
     const quarter = Math.floor(now.getMonth() / 3) + 1;
     return { year, quarter };
+  };
+
+  const clearReportTimer = () => {
+    if (reportTimerRef.current) {
+      window.clearTimeout(reportTimerRef.current);
+      reportTimerRef.current = null;
+    }
+  };
+
+  const isReportCompleted = (status?: string, message?: string) => {
+    const normalizedStatus = status?.toLowerCase() ?? '';
+    const normalizedMessage = message ?? '';
+    if (['completed', 'done', 'success', 'ready'].some((token) => normalizedStatus.includes(token))) {
+      return true;
+    }
+    if (/완료|생성 완료|ready/i.test(normalizedMessage)) {
+      return true;
+    }
+    return false;
+  };
+
+  const pollReportStatus = async (companyDetail: CompanyOverview) => {
+    const { year, quarter } = resolveReportPeriod(companyDetail);
+    const companyCode = companyDetail.company.stockCode ?? companyDetail.company.id;
+    try {
+      const response = await requestCompanyAiReport(companyCode, { year, quarter });
+      if (isReportCompleted(response.status, response.message)) {
+        setIsReportGenerating(false);
+        setReportStatusMessage(
+          'AI 분석 코멘트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.',
+        );
+        clearReportTimer();
+        return;
+      }
+
+      setReportStatusMessage(response.message ?? 'AI 리포트 생성 중입니다. (약 1~2분 소요)');
+    } catch (error) {
+      setIsReportGenerating(false);
+      setReportStatusMessage('AI 리포트 생성 상태 확인에 실패했습니다.');
+      clearReportTimer();
+      return;
+    }
+
+    reportTimerRef.current = window.setTimeout(() => {
+      void pollReportStatus(companyDetail);
+    }, 10000);
+  };
+
+  const handleGenerateReport = async () => {
+    if (!detail || isReportGenerating) {
+      return;
+    }
+
+    clearReportTimer();
+    setIsReportGenerating(true);
+    setReportStatusMessage('AI 분석 코멘트 생성 중입니다. (약 1~2분 소요)');
+
+    const { year, quarter } = resolveReportPeriod(detail);
+    const companyCode = detail.company.stockCode ?? detail.company.id;
+    try {
+      const response = await requestCompanyAiReport(companyCode, { year, quarter });
+      if (isReportCompleted(response.status, response.message)) {
+        setIsReportGenerating(false);
+        setReportStatusMessage(
+          'AI 분석 코멘트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.',
+        );
+        return;
+      }
+
+      setReportStatusMessage(
+        response.message ?? 'AI 분석 코멘트 생성 중입니다. (약 1~2분 소요)',
+      );
+      reportTimerRef.current = window.setTimeout(() => {
+        void pollReportStatus(detail);
+      }, 10000);
+    } catch (error) {
+      setIsReportGenerating(false);
+      setReportStatusMessage('AI 분석 코멘트 생성 요청에 실패했습니다.');
+    }
   };
 
   const handleDownloadReport = async () => {
@@ -229,6 +322,15 @@ const CompanyDetailPage: React.FC = () => {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                 <button
                   type="button"
+                  onClick={handleGenerateReport}
+                  disabled={isReportGenerating}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <i className={`fas ${isReportGenerating ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} text-xs`}></i>
+                  {isReportGenerating ? 'AI 분석 코멘트 생성 중' : 'AI 분석 코멘트 생성'}
+                </button>
+                <button
+                  type="button"
                   onClick={handleDownloadReport}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white transition hover:border-white/30 hover:bg-white/10"
                 >
@@ -237,6 +339,9 @@ const CompanyDetailPage: React.FC = () => {
                 </button>
                 {downloadError && (
                   <span className="text-xs text-rose-300">{downloadError}</span>
+                )}
+                {reportStatusMessage && (
+                  <span className="text-xs text-slate-400">{reportStatusMessage}</span>
                 )}
                 <Link
                   to="/companies"
