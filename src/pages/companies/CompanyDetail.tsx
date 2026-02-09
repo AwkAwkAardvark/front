@@ -49,6 +49,7 @@ const CompanyDetailPage: React.FC = () => {
   const [reportStatusMessage, setReportStatusMessage] = useState<string | null>(null);
   const [reportYear, setReportYear] = useState<number | null>(null);
   const [reportQuarter, setReportQuarter] = useState<number | null>(null);
+  const [reportCompletedKey, setReportCompletedKey] = useState<string | null>(null);
   const reportTimerRef = useRef<number | null>(null);
   const currentUser = getStoredUser();
   const storedAdminViewUser = getStoredAdminViewUser();
@@ -106,6 +107,14 @@ const CompanyDetailPage: React.FC = () => {
     setReportYear(year);
     setReportQuarter(quarter);
   }, [detail, reportQuarter, reportYear]);
+
+  useEffect(() => {
+    if (reportYear === null || reportQuarter === null) return;
+    const nextKey = `${reportYear}-Q${reportQuarter}`;
+    if (reportCompletedKey && reportCompletedKey !== nextKey) {
+      setReportStatusMessage(null);
+    }
+  }, [reportYear, reportQuarter, reportCompletedKey]);
 
   useEffect(() => {
     return () => {
@@ -203,19 +212,23 @@ const CompanyDetailPage: React.FC = () => {
   const pollReportStatus = async (companyDetail: CompanyOverview) => {
     const year = reportYear ?? resolveReportPeriod(companyDetail).year;
     const quarter = reportQuarter ?? resolveReportPeriod(companyDetail).quarter;
-    const companyCode = companyDetail.company.stockCode ?? companyDetail.company.id;
+    const companyCode = companyDetail.company.id;
     try {
       const response = await requestCompanyAiReport(companyCode, { year, quarter });
       if (isReportCompleted(response.status, response.message)) {
         setIsReportGenerating(false);
+        setReportCompletedKey(`${year}-Q${quarter}`);
         setReportStatusMessage(
-          'AI 분석 리포트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.',
+          `${year}년 Q${quarter} AI 분석 리포트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.`,
         );
         clearReportTimer();
         return;
       }
 
-      setReportStatusMessage(response.message ?? 'AI 리포트 생성 중입니다. (약 1~2분 소요)');
+      setReportStatusMessage(
+        response.message ??
+          `${year}년 Q${quarter} AI 분석 리포트 생성 중입니다. (약 1~2분 소요)`,
+      );
     } catch (error) {
       setIsReportGenerating(false);
       setReportStatusMessage('AI 리포트 생성 상태 확인에 실패했습니다.');
@@ -235,23 +248,36 @@ const CompanyDetailPage: React.FC = () => {
 
     clearReportTimer();
     setIsReportGenerating(true);
-    setReportStatusMessage('AI 분석 리포트 생성 중입니다. (약 1~2분 소요)');
 
     const year = reportYear ?? resolveReportPeriod(detail).year;
     const quarter = reportQuarter ?? resolveReportPeriod(detail).quarter;
-    const companyCode = detail.company.stockCode ?? detail.company.id;
+    const currentKey = `${year}-Q${quarter}`;
+    if (reportCompletedKey === currentKey) {
+      setIsReportGenerating(false);
+      setReportStatusMessage(
+        `${year}년 Q${quarter} AI 분석 리포트는 이미 생성 완료되었습니다. 다운로드 버튼을 눌러 주세요.`,
+      );
+      return;
+    }
+
+    setReportStatusMessage(
+      `${year}년 Q${quarter} AI 분석 리포트 생성 중입니다. (약 1~2분 소요)`,
+    );
+    const companyCode = detail.company.id;
     try {
       const response = await requestCompanyAiReport(companyCode, { year, quarter });
       if (isReportCompleted(response.status, response.message)) {
         setIsReportGenerating(false);
+        setReportCompletedKey(currentKey);
         setReportStatusMessage(
-          'AI 분석 리포트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.',
+          `${year}년 Q${quarter} AI 분석 리포트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.`,
         );
         return;
       }
 
       setReportStatusMessage(
-        response.message ?? 'AI 분석 리포트 생성 중입니다. (약 1~2분 소요)',
+        response.message ??
+          `${year}년 Q${quarter} AI 분석 리포트 생성 중입니다. (약 1~2분 소요)`,
       );
       reportTimerRef.current = window.setTimeout(() => {
         void pollReportStatus(detail);
@@ -271,7 +297,7 @@ const CompanyDetailPage: React.FC = () => {
     try {
       const year = reportYear ?? resolveReportPeriod(detail).year;
       const quarter = reportQuarter ?? resolveReportPeriod(detail).quarter;
-      const companyCode = detail.company.stockCode ?? detail.company.id;
+    const companyCode = detail.company.id;
       const blob = await downloadCompanyAiReport(companyCode, { year, quarter });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -361,7 +387,12 @@ const CompanyDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleGenerateReport}
-                  disabled={isReportGenerating}
+                  disabled={
+                    isReportGenerating ||
+                    (reportYear !== null &&
+                      reportQuarter !== null &&
+                      reportCompletedKey === `${reportYear}-Q${reportQuarter}`)
+                  }
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <i className={`fas ${isReportGenerating ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} text-xs`}></i>
