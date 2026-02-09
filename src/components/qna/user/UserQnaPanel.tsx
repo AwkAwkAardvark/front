@@ -38,9 +38,6 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
       const response = await api.listPosts();
       setQaPosts(response);
       setIsFallback(api.wasFallback?.() ?? false);
-      if (!selectedPostId && response.length > 0) {
-        setSelectedPostId(response[0].id);
-      }
     } catch (error) {
       setErrorQa('Q&A 데이터를 불러오는 중 문제가 발생했습니다.');
     } finally {
@@ -73,9 +70,21 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
   }, [currentUser?.id, qaPosts, qaSearch, qaStatusFilter]);
 
   const selectedPost = useMemo(
-    () => qaPosts.find((post) => post.id === selectedPostId) ?? null,
-    [qaPosts, selectedPostId]
+    () => filteredQaPosts.find((post) => post.id === selectedPostId) ?? null,
+    [filteredQaPosts, selectedPostId]
   );
+
+  useEffect(() => {
+    if (selectedPostId) {
+      const stillVisible = filteredQaPosts.some((post) => post.id === selectedPostId);
+      if (stillVisible) return;
+    }
+    if (filteredQaPosts.length > 0) {
+      setSelectedPostId(filteredQaPosts[0].id);
+    } else {
+      setSelectedPostId(null);
+    }
+  }, [filteredQaPosts, selectedPostId]);
 
   const handleCreatePost = useCallback(async () => {
     if (!composerTitle.trim() || !composerBody.trim()) {

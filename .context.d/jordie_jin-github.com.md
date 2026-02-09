@@ -6,6 +6,7 @@
 - email: jordie_Jin@github.com
 
 ## 2. Recent Notes (최근 메모)
+- 2026-02-09 | 작업: 사용자 Q&A 선택 게시글 필터 반영 | 결과: 필터된 목록 기준으로 선택/스레드 표시 | 이슈: 없음
 - 2026-02-09 | 작업: QnA 관리자 답변 응답 매핑 | 결과: name/content 기반 QaReply 매핑 | 이슈: 없음
 - 2026-02-09 | 작업: QnA 관리자 답변 요청 바디 수정 | 결과: content 필드로 전송하도록 변경 | 이슈: 없음
 - 2026-02-09 | 작업: Q&A 작성자 표시 name 우선 사용 | 결과: userName/name/author 필드 우선 반영 | 이슈: 없음
