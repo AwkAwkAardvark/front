@@ -4,6 +4,7 @@ import { getMockQaPostsForUser } from '../../mocks/decisionRoom.mock';
 import { getStoredUser } from '../auth';
 
 const USER_QNA_BASE = '/api/posts/qna';
+const ADMIN_REPLY_STORAGE_KEY = 'sentinel:qna:admin-replies:v1';
 let lastFallback = false;
 
 type PostResponse = {
@@ -21,7 +22,42 @@ type PostResponse = {
   tags?: string[];
 };
 
-const toQaPost = (post: PostResponse, fallbackAuthor?: string): QaPost => {
+type ReplyStore = Record<string, QaPost['replies']>;
+
+const readStoredReplies = (): ReplyStore => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(ADMIN_REPLY_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as ReplyStore;
+  } catch (error) {
+    return {};
+  }
+};
+
+const mergeReplies = (
+  postId: string,
+  serverReplies: QaPost['replies'],
+  store: ReplyStore,
+): QaPost['replies'] => {
+  const localReplies = store[postId] ?? [];
+  if (localReplies.length === 0) return serverReplies;
+
+  const merged = [...serverReplies];
+  localReplies.forEach((reply) => {
+    if (!merged.some((item) => item.id === reply.id)) {
+      merged.push(reply);
+    }
+  });
+  merged.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return merged;
+};
+
+const toQaPost = (post: PostResponse, store: ReplyStore, fallbackAuthor?: string): QaPost => {
+  const postId = String(post.id);
+  const replies = mergeReplies(postId, post.replies ?? [], store);
   const author =
     post.userName ||
     post.name ||
@@ -29,13 +65,13 @@ const toQaPost = (post: PostResponse, fallbackAuthor?: string): QaPost => {
     fallbackAuthor ||
     (post.userId !== undefined ? String(post.userId) : 'User');
   const status =
-    (post.replies?.length ?? 0) > 0 ||
+    replies.length > 0 ||
     (post.status ?? '').toLowerCase().includes('answered')
       ? 'answered'
       : 'pending';
 
   return {
-    id: String(post.id),
+    id: postId,
     userId: post.userId,
     title: post.title,
     body: post.content,
@@ -44,7 +80,7 @@ const toQaPost = (post: PostResponse, fallbackAuthor?: string): QaPost => {
     updatedAt: post.updatedAt,
     status,
     tags: post.tags ?? [],
-    replies: post.replies ?? [],
+    replies,
   };
 };
 
@@ -58,8 +94,9 @@ export const userQnaApi = {
         { page: 1, size: 50, userId: currentUser?.id },
       );
       const items = Array.isArray(response) ? response : response.content ?? [];
+      const store = readStoredReplies();
       lastFallback = false;
-      return items.map((item) => toQaPost(item, currentUser?.name));
+      return items.map((item) => toQaPost(item, store, currentUser?.name));
     } catch (error) {
       if (error instanceof ApiRequestError) {
         const status = error.apiError?.status;
@@ -80,7 +117,7 @@ export const userQnaApi = {
         content: input.body,
       },
     );
-    return toQaPost(response, input.author);
+    return toQaPost(response, readStoredReplies(), input.author);
   },
   deletePost: async (postId: string, categoryName = 'qna'): Promise<void> =>
     apiDelete<void>(`/api/posts/${categoryName}/${postId}`),
