@@ -258,7 +258,8 @@ const CompanyDetailPage: React.FC = () => {
     setDownloadError(null);
     try {
       const { year, quarter } = resolveReportPeriod(detail);
-      const blob = await downloadCompanyAiReport(detail.company.id, { year, quarter });
+      const companyCode = detail.company.stockCode ?? detail.company.id;
+      const blob = await downloadCompanyAiReport(companyCode, { year, quarter });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
