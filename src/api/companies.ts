@@ -1,22 +1,51 @@
 // 협력사 관련 API 호출 헬퍼입니다.
-import { apiGet, apiPost } from './client';
+import { ApiRequestError, apiGet, apiPost } from './client';
 import {
   CompanyConfirmRequest,
   CompanyConfirmResult,
   CompanyInsightItem,
   CompanyOverview,
+  CompanyAiAnalysisResponse,
   CompanySearchResponse,
   CompanySummary,
   UpdateRequestCreate,
 } from '../types/company';
 import { DashboardSummary } from '../types/dashboard';
 import { CompanyQuarterRisk } from '../types/risk';
+import { getAuthToken } from '../services/auth';
+
+const resolveBaseUrl = () => (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
+const buildUrl = (
+  url: string,
+  params?: Record<string, string | number | boolean | undefined>,
+): string => {
+  const baseUrl = resolveBaseUrl();
+  const resolvedUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+  const finalUrl = new URL(resolvedUrl, window.location.origin);
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+      finalUrl.searchParams.set(key, String(value));
+    });
+  }
+
+  return finalUrl.toString();
+};
 
 export const searchCompanies = async (params: {
-  keyword: string;
+  keyword?: string;
+  name?: string;
+  code?: string;
 }): Promise<CompanySearchResponse> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<CompanySearchResponse>('/api/companies/search', params);
+  const normalizedParams =
+    params.keyword && !params.name && !params.code
+      ? { ...params, name: params.keyword }
+      : params;
+
+  return apiGet<CompanySearchResponse>('/api/companies/search', normalizedParams);
 };
 
 export const confirmCompany = async (
@@ -25,6 +54,16 @@ export const confirmCompany = async (
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
   return apiPost<CompanyConfirmResult, CompanyConfirmRequest>(
     '/api/companies/confirm',
+    payload,
+  );
+};
+
+export const createWatchlistCompany = async (payload: {
+  companyId: number;
+  note?: string;
+}): Promise<string> => {
+  return apiPost<string, { companyId: number; note?: string }>(
+    '/api/watchlists',
     payload,
   );
 };
@@ -52,7 +91,7 @@ export const getCompanySummary = async (
 
 export const getCompanyOverview = async (
   companyId: string,
-  params?: { userId?: string },
+  params?: { userId?: string; quarterKey?: string },
 ): Promise<CompanyOverview> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
   return apiGet<CompanyOverview>(`/api/companies/${companyId}/overview`, params);
@@ -90,4 +129,36 @@ export const createUpdateRequest = async (
     `/api/companies/${companyId}/update-requests`,
     payload,
   );
+};
+
+export const getCompanyAiAnalysis = async (
+  companyCode: string,
+  params?: { year?: number; quarter?: number; userId?: string },
+): Promise<CompanyAiAnalysisResponse> => {
+  return apiGet<CompanyAiAnalysisResponse>(
+    `/api/companies/${companyCode}/ai-analysis`,
+    params,
+  );
+};
+
+export const downloadCompanyAiReport = async (
+  companyCode: string,
+  params: { year: number; quarter: number; userId?: string },
+): Promise<Blob> => {
+  const url = buildUrl(`/api/companies/${companyCode}/ai-report/download`, params);
+  const token = getAuthToken();
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new ApiRequestError('AI 리포트 다운로드에 실패했습니다.', {
+      status: response.status,
+    });
+  }
+
+  return response.blob();
 };

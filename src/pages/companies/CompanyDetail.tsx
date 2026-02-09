@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import AsyncState from '../../components/common/AsyncState';
 import MetricForecastChartPanel from '../../components/companyDetail/MetricForecastChartPanel';
 import MetricsPanel from '../../components/companyDetail/MetricsPanel';
-import { getCompanyInsights, getCompanyOverview } from '../../api/companies';
+import { downloadCompanyAiReport, getCompanyInsights, getCompanyOverview } from '../../api/companies';
 import { getMockCompanyInsights, getMockCompanyOverview } from '../../mocks/companies.mock';
 import { getStoredUser } from '../../services/auth';
 import {
@@ -39,6 +39,7 @@ const CompanyDetailPage: React.FC = () => {
   const [detail, setDetail] = useState<CompanyOverview | null>(null);
   const [insights, setInsights] = useState<CompanyInsightItem[]>([]);
   const [insightsFallbackMessage, setInsightsFallbackMessage] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const currentUser = getStoredUser();
   const storedAdminViewUser = getStoredAdminViewUser();
   const adminViewUserId = resolveAdminViewUserId(
@@ -113,43 +114,49 @@ const CompanyDetailPage: React.FC = () => {
   const metrics = toMetricCards(normalizedKeyMetrics);
   const signals = toSignalCards(detail?.signals);
 
-  const buildReportContent = (companyDetail: CompanyOverview) => {
-    const summaryLines = [
-      `협력사 분석 보고서`,
-      `기업명: ${companyDetail.company.name}`,
-      `기업 ID: ${companyDetail.company.id}`,
-      `산업군: ${companyDetail.company.sector.label}`,
-      `리스크 등급: ${getCompanyStatusFromHealth(
-        getCompanyHealthScore(companyDetail.company),
-      )}`,
-      `작성일: ${new Date().toLocaleDateString('ko-KR')}`,
-    ];
-    const metricLines =
-      companyDetail.keyMetrics?.map(
-        (metric) => `- ${metric.label}: ${metric.value ?? '—'}${metric.unit ?? ''}`,
-      ) ?? [];
-    const aiComment = companyDetail.aiComment ? `AI 코멘트:\n${companyDetail.aiComment}` : '';
+  const resolveReportPeriod = (companyDetail: CompanyOverview): { year: number; quarter: number } => {
+    const nextQuarter = companyDetail.forecast?.nextQuarter ?? '';
+    const nextQuarterMatch = nextQuarter.match(/^(\d{4})(\d{2})$/);
+    if (nextQuarterMatch) {
+      const year = Number(nextQuarterMatch[1]);
+      const quarter = Number(nextQuarterMatch[2]);
+      if (quarter >= 1 && quarter <= 4) {
+        return { year, quarter };
+      }
+    }
 
-    return [summaryLines.join('\n'), '핵심 지표', ...metricLines, '', aiComment]
-      .filter((line) => line.length > 0)
-      .join('\n');
+    const latestActualQuarter = companyDetail.forecast?.latestActualQuarter ?? '';
+    const latestMatch = latestActualQuarter.match(/^(\d{4})Q([1-4])$/);
+    if (latestMatch) {
+      return { year: Number(latestMatch[1]), quarter: Number(latestMatch[2]) };
+    }
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+    return { year, quarter };
   };
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     if (!detail) {
       return;
     }
 
-    const reportContent = buildReportContent(detail);
-    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${detail.company.name.replace(/\s+/g, '')}_분석보고서.txt`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    setDownloadError(null);
+    try {
+      const { year, quarter } = resolveReportPeriod(detail);
+      const blob = await downloadCompanyAiReport(detail.company.id, { year, quarter });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${detail.company.name.replace(/\s+/g, '')}_AI리포트.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (downloadErr) {
+      setDownloadError('AI 리포트 다운로드에 실패했습니다.');
+    }
   };
 
   return (
@@ -208,6 +215,9 @@ const CompanyDetailPage: React.FC = () => {
                   <i className="fas fa-download text-xs"></i>
                   분석 보고서 다운로드
                 </button>
+                {downloadError && (
+                  <span className="text-xs text-rose-300">{downloadError}</span>
+                )}
                 <Link
                   to="/companies"
                   className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-slate-500 transition hover:text-white"

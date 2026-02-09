@@ -5,14 +5,15 @@ import SelectedCompanyPanel from '../../components/companies/SelectedCompanyPane
 import JsonPreview from '../../components/common/JsonPreview';
 import { useCompanySearch } from '../../hooks/useCompanySearch';
 import { useCompanySelection } from '../../hooks/useCompanySelection';
-import { confirmCompany, getCompanyOverview } from '../../api/companies';
+import { ApiRequestError } from '../../api/client';
+import { createWatchlistCompany, getCompanyOverview } from '../../api/companies';
 import { CompanyConfirmResult, CompanyOverview, CompanySearchItem } from '../../types/company';
 
 const AddCompanyPage: React.FC = () => {
   // TODO(API 연결):
   // - 더미 데이터 제거
   // - searchCompanies API 연결
-  // - confirmCompany API 연결
+  // - watchlist 등록 API 연결
   // - PROCESSING 상태 처리 로직 활성화
   const [keyword, setKeyword] = useState('');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
@@ -75,32 +76,34 @@ const AddCompanyPage: React.FC = () => {
     setCompletionMessage(null);
 
     try {
-      const confirmPayload = {
+      const resultMessage = await createWatchlistCompany({
         companyId: selectedCompany.companyId,
-        code: selectedCompany.stockCode ?? undefined,
+      });
+      setConfirmResult({
+        companyId: String(selectedCompany.companyId),
         name: selectedCompany.corpName,
-      };
+        modelStatus: 'COMPLETED',
+      });
+      setCompletionMessage(resultMessage || '워치리스트에 등록되었습니다.');
 
-      const result = await confirmCompany(confirmPayload);
-      setConfirmResult(result);
-
-      if (result.modelStatus === 'PROCESSING') {
-        setCompletionMessage('분석이 진행 중입니다. 완료되면 다시 확인해 주세요.');
-        // TODO(API 연결): PROCESSING 상태일 때 폴링/재요청 로직 추가
+      const cachedOverview = overviewCacheRef.current[String(selectedCompany.companyId)];
+      if (cachedOverview) {
+        setCompanyOverview(cachedOverview);
       } else {
-        const cachedOverview = overviewCacheRef.current[result.companyId];
-        if (cachedOverview) {
-          setCompanyOverview(cachedOverview);
-          setCompletionMessage('이미 불러온 기업입니다.');
-        } else {
-          const overview = await getCompanyOverview(result.companyId);
-          overviewCacheRef.current[result.companyId] = overview;
-          setCompanyOverview(overview);
-          setCompletionMessage('완료: 기존 분석 결과를 불러왔습니다.');
-        }
+        const overview = await getCompanyOverview(String(selectedCompany.companyId));
+        overviewCacheRef.current[String(selectedCompany.companyId)] = overview;
+        setCompanyOverview(overview);
       }
     } catch (err) {
-      setConfirmError('확인 단계 처리에 실패했습니다. 다시 시도해 주세요.');
+      if (err instanceof ApiRequestError && err.apiError?.status === 409) {
+        setConfirmError('이미 워치리스트에 등록된 기업입니다.');
+      } else if (err instanceof ApiRequestError && err.apiError?.status === 400) {
+        setConfirmError('요청 값 오류로 등록에 실패했습니다.');
+      } else if (err instanceof ApiRequestError && err.apiError?.status === 401) {
+        setConfirmError('인증이 필요합니다. 다시 로그인해 주세요.');
+      } else {
+        setConfirmError('확인 단계 처리에 실패했습니다. 다시 시도해 주세요.');
+      }
     } finally {
       setIsConfirming(false);
     }

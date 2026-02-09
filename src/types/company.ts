@@ -43,9 +43,12 @@ export interface CompanyKpiMini {
 export interface CompanySummary {
   id: string;
   name: string;
+  stockCode?: string | null;
   sector: Sector;
   overallScore: number;
   riskLevel: RiskLevel;
+  networkHealth?: number;
+  reputationScore?: number;
   lastUpdatedAt?: string;
   kpi?: CompanyKpiMini;
 }
@@ -130,6 +133,13 @@ export interface CompanyOverview {
     topKeywords?: string[];
   };
   modelStatus: ModelStatus;
+}
+
+export interface CompanyAiAnalysisResponse {
+  company_code: string;
+  company_name: string;
+  base_period: string;
+  predictions: Record<string, number>;
 }
 
 export interface CompanySearchItem {
