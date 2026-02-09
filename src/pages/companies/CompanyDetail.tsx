@@ -1,5 +1,5 @@
 // 협력사 상세 페이지 컴포넌트입니다.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AsyncState from '../../components/common/AsyncState';
 import MetricForecastChartPanel from '../../components/companyDetail/MetricForecastChartPanel';
