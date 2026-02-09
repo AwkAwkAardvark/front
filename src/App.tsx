@@ -16,7 +16,10 @@ import NoticesPage from './pages/decisionRoom/NoticesPage';
 import Landing from './pages/Landing';
 import AddCompany from './pages/companies/AddCompany';
 import VerifyEmail from './pages/auth/VerifyEmail';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import { getStoredUser } from './services/auth';
+import LegalFooter from './components/common/LegalFooter';
 
 const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: string }) => {
   const location = useLocation();
@@ -100,7 +103,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             title="Spline Background"
           ></iframe>
         </div>
-        <div className="relative z-10 p-10 max-w-7xl mx-auto">{children}</div>
+        <div className="relative z-10 p-10 max-w-7xl mx-auto">
+          {children}
+          <LegalFooter />
+        </div>
       </main>
     </div>
   );
@@ -118,6 +124,8 @@ const App: React.FC = () => {
         <Route path="/decision-room/notices" element={<DashboardLayout children={<NoticesPage />} />} />
         <Route path="/decision-room/qna" element={<DashboardLayout children={<QnaPage />} />} />
         <Route path="/auth/verify-email" element={<VerifyEmail />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
       </Routes>
     </Router>
   );
