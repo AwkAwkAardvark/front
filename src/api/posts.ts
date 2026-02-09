@@ -1,5 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from './client';
 import {
+  AdminPostCreateRequest,
+  AdminPostUpdateRequest,
   PostCreateRequest,
   PostFileItem,
   PostItem,
@@ -8,27 +10,78 @@ import {
   PostUpdateRequest,
 } from '../types/post';
 
-export const listPosts = async (params?: PostListParams): Promise<PostListData> => {
-  return apiGet<PostListData>('/api/posts', params);
+export const listPosts = async (
+  categoryName: string,
+  params?: PostListParams,
+): Promise<PostListData> => {
+  return apiGet<PostListData>(`/api/posts/${categoryName}`, params);
 };
 
-export const getPost = async (postId: number | string): Promise<PostItem> => {
-  return apiGet<PostItem>(`/api/posts/${postId}`);
+export const getPost = async (
+  categoryName: string,
+  postId: number | string,
+): Promise<PostItem> => {
+  return apiGet<PostItem>(`/api/posts/${categoryName}/${postId}`);
 };
 
-export const createPost = async (payload: PostCreateRequest): Promise<PostItem> => {
-  return apiPost<PostItem, PostCreateRequest>('/api/posts', payload);
+export const createPost = async (
+  categoryName: string,
+  payload: PostCreateRequest,
+): Promise<PostItem> => {
+  return apiPost<PostItem, PostCreateRequest>(`/api/posts/${categoryName}`, payload);
 };
 
 export const updatePost = async (
+  categoryName: string,
   postId: number | string,
   payload: PostUpdateRequest,
 ): Promise<PostItem> => {
-  return apiPatch<PostItem, PostUpdateRequest>(`/api/posts/${postId}`, payload);
+  return apiPatch<PostItem, PostUpdateRequest>(
+    `/api/posts/${categoryName}/${postId}`,
+    payload,
+  );
 };
 
-export const deletePost = async (postId: number | string): Promise<string> => {
-  return apiDelete<string>(`/api/posts/${postId}`);
+export const deletePost = async (
+  categoryName: string,
+  postId: number | string,
+): Promise<string> => {
+  return apiDelete<string>(`/api/posts/${categoryName}/${postId}`);
+};
+
+export const listAdminPosts = async (
+  categoryName: string,
+  params?: PostListParams,
+): Promise<PostListData> => {
+  return apiGet<PostListData>(`/api/admin/posts/${categoryName}`, params);
+};
+
+export const createAdminPost = async (
+  categoryName: string,
+  payload: AdminPostCreateRequest,
+): Promise<PostItem> => {
+  return apiPost<PostItem, AdminPostCreateRequest>(
+    `/api/admin/posts/${categoryName}`,
+    payload,
+  );
+};
+
+export const updateAdminPost = async (
+  categoryName: string,
+  postId: number | string,
+  payload: AdminPostUpdateRequest,
+): Promise<PostItem> => {
+  return apiPatch<PostItem, AdminPostUpdateRequest>(
+    `/api/admin/posts/${categoryName}/${postId}`,
+    payload,
+  );
+};
+
+export const deleteAdminPost = async (
+  categoryName: string,
+  postId: number | string,
+): Promise<string> => {
+  return apiDelete<string>(`/api/admin/posts/${categoryName}/${postId}`);
 };
 
 export const listPostFiles = async (postId: number | string): Promise<PostFileItem[]> => {

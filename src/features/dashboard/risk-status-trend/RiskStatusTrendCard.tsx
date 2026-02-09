@@ -1,21 +1,23 @@
 import React, { useMemo } from 'react';
 import RiskStatusTrendChart from './RiskStatusTrendChart';
-import { makeMockRiskStatusTrend } from './mock';
 import { normalizeRiskStatusTrend } from './normalize';
 import { RiskStatusTrendPayload } from './types';
+import { DashboardSummary } from '../../../types/dashboard';
 
-const USE_API = false;
+interface RiskStatusTrendCardProps {
+  summary: DashboardSummary;
+}
 
-const fetchDashboardSummaryAndMap = (): RiskStatusTrendPayload => {
-  // TODO: SENTINEL_PoC_API.yaml의 /dashboard/summary 응답을 RiskStatusTrendPayload로 매핑
-  throw new Error('TODO: map /dashboard/summary response to RiskStatusTrendPayload');
-};
+const buildPayload = (summary: DashboardSummary): RiskStatusTrendPayload => ({
+  latestActualQuarter: summary.latestActualQuarter,
+  forecastQuarter: summary.forecastQuarter,
+  windowQuarters: summary.windowQuarters,
+  trend: summary.riskStatusDistributionTrend,
+  unit: 'COUNT',
+});
 
-const RiskStatusTrendCard: React.FC = () => {
-  const payload = useMemo(
-    () => (USE_API ? fetchDashboardSummaryAndMap() : makeMockRiskStatusTrend('2025Q3')),
-    [],
-  );
+const RiskStatusTrendCard: React.FC<RiskStatusTrendCardProps> = ({ summary }) => {
+  const payload = useMemo(() => buildPayload(summary), [summary]);
   const normalizedPayload = useMemo(() => normalizeRiskStatusTrend(payload), [payload]);
   const latestActualQuarter =
     normalizedPayload.windowQuarters[normalizedPayload.windowQuarters.length - 2];
@@ -41,7 +43,7 @@ const RiskStatusTrendCard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
             <div className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-emerald-400/80 rounded-full"></span>
-              <span>정상</span>
+              <span>양호</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-amber-400/80 rounded-full"></span>

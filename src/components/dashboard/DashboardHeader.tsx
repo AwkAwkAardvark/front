@@ -1,13 +1,23 @@
 import React from 'react';
+import AdminUserSwitch from '../common/AdminUserSwitch';
+import { AdminViewUser } from '../../types/adminView';
 
 interface DashboardHeaderProps {
   onLogout?: () => void;
   userName?: string;
+  showAdminSwitch?: boolean;
+  adminUsers?: AdminViewUser[];
+  selectedAdminUserId?: string;
+  onAdminUserChange?: (userId: string) => void;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onLogout,
   userName = 'id',
+  showAdminSwitch = false,
+  adminUsers = [],
+  selectedAdminUserId,
+  onAdminUserChange,
 }) => {
   return (
     <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -16,6 +26,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         <p className="text-slate-400">{userName} 님, 환영합니다.</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
+        {showAdminSwitch && onAdminUserChange && adminUsers.length > 0 && (
+          <AdminUserSwitch
+            users={adminUsers}
+            selectedUserId={selectedAdminUserId}
+            onChange={onAdminUserChange}
+          />
+        )}
         {onLogout && (
           <button
             type="button"

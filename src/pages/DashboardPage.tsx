@@ -5,11 +5,21 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import KpiCards from '../components/dashboard/KpiCards';
 import RiskStatusTrendCard from '../features/dashboard/risk-status-trend/RiskStatusTrendCard';
 import RiskDistributionCard from '../components/dashboard/RiskDistributionCard';
-import { getDashboardSummary } from '../api/companies';
+import { getDashboardRiskRecords, getDashboardSummary } from '../api/companies';
 import { companyRiskQuarterlyMock } from '../mocks/companyRiskQuarterly.mock';
 import { getMockDashboardSummary } from '../mocks/dashboardSummary.mock';
 import { getStoredUser, logout } from '../services/auth';
+import {
+  fetchAdminViewUsers,
+  getAdminViewUsers,
+  getStoredAdminViewUser,
+  isAdminUser,
+  resolveAdminViewUserId,
+  setStoredAdminViewUser,
+} from '../services/adminView';
+import { AdminViewUser } from '../types/adminView';
 import { DashboardSummary, RiskDistribution } from '../types/dashboard';
+import { CompanyQuarterRisk } from '../types/risk';
 
 const buildRiskDistribution = (summary: DashboardSummary): RiskDistribution => {
   const { NORMAL, CAUTION, RISK } = summary.riskStatusDistribution;
@@ -33,10 +43,19 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [riskDistribution, setRiskDistribution] = useState<RiskDistribution | null>(null);
+  const [riskRecords, setRiskRecords] = useState<CompanyQuarterRisk[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
-  const [userName] = useState(() => getStoredUser()?.name ?? 'id');
+  const currentUser = getStoredUser();
+  const isAdmin = isAdminUser(currentUser);
+  const [userName] = useState(() => currentUser?.name ?? 'id');
+  const [adminUsers, setAdminUsers] = useState<AdminViewUser[]>([]);
+  const [adminUsersFallback, setAdminUsersFallback] = useState(false);
+  const [adminViewUser, setAdminViewUser] = useState<AdminViewUser | null>(() =>
+    getStoredAdminViewUser(),
+  );
+  const adminViewUserId = resolveAdminViewUserId(isAdmin, adminViewUser);
 
   const loadSummary = useCallback(async () => {
     setIsLoading(true);
@@ -44,22 +63,53 @@ const DashboardPage: React.FC = () => {
     setFallbackMessage(null);
 
     try {
-      const response = await getDashboardSummary();
+      const response = await getDashboardSummary({ userId: adminViewUserId });
       setData(response);
       setRiskDistribution(buildRiskDistribution(response));
+      try {
+        const riskResponse = await getDashboardRiskRecords({
+          limit: 200,
+          userId: adminViewUserId,
+        });
+        setRiskRecords(riskResponse);
+      } catch (riskError) {
+        setRiskRecords(companyRiskQuarterlyMock);
+      }
     } catch (error) {
       const fallback = getMockDashboardSummary();
       setData(fallback);
       setRiskDistribution(buildRiskDistribution(fallback));
+      setRiskRecords(companyRiskQuarterlyMock);
       setFallbackMessage('대시보드 API 응답 오류로 목 데이터를 표시하고 있어요.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [adminViewUserId]);
+
+  const loadAdminUsers = useCallback(async () => {
+    if (!isAdmin) {
+      setAdminUsers([]);
+      setAdminUsersFallback(false);
+      return;
+    }
+
+    try {
+      const response = await fetchAdminViewUsers();
+      setAdminUsers(response);
+      setAdminUsersFallback(false);
+    } catch (error) {
+      setAdminUsers(getAdminViewUsers());
+      setAdminUsersFallback(true);
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
+
+  useEffect(() => {
+    void loadAdminUsers();
+  }, [loadAdminUsers]);
 
   const emptyState = useMemo(() => {
     if (!riskDistribution || !data) return false;
@@ -79,7 +129,24 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="animate-in fade-in duration-700">
-      <DashboardHeader onLogout={handleLogout} userName={userName} />
+      <DashboardHeader
+        onLogout={handleLogout}
+        userName={userName}
+        showAdminSwitch={isAdmin && adminUsers.length > 0}
+        adminUsers={adminUsers}
+        selectedAdminUserId={adminViewUser?.id}
+        onAdminUserChange={(userId) => {
+          const nextUser = adminUsers.find((user) => user.id === userId) ?? null;
+          setAdminViewUser(nextUser);
+          setStoredAdminViewUser(nextUser);
+        }}
+      />
+
+      {adminUsersFallback && (
+        <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-6 py-4 text-sm text-amber-100">
+          사용자 목록 API 오류로 목 데이터를 표시하고 있어요.
+        </div>
+      )}
 
       {isLoading && (
         <div className="space-y-8">
@@ -123,7 +190,7 @@ const DashboardPage: React.FC = () => {
               {fallbackMessage}
             </div>
           )}
-          <KpiCards kpis={data.kpis} riskRecords={companyRiskQuarterlyMock} />
+          <KpiCards kpis={data.kpis} riskRecords={riskRecords} />
 
           {emptyState && (
             <div className="glass-panel p-10 rounded-2xl text-center text-slate-400 mb-10">
@@ -133,7 +200,7 @@ const DashboardPage: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <RiskStatusTrendCard />
+            <RiskStatusTrendCard summary={data} />
             <RiskDistributionCard distribution={riskDistribution} />
           </div>
         </div>

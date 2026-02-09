@@ -1,6 +1,13 @@
 // 메인 애플리케이션 셸로 라우팅과 대시보드 레이아웃을 구성합니다.
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import Dashboard from './pages/DashboardPage';
 import Companies from './pages/companies/Companies';
 import CompanyDetail from './pages/companies/CompanyDetail';
@@ -9,15 +16,25 @@ import NoticesPage from './pages/decisionRoom/NoticesPage';
 import Landing from './pages/Landing';
 import AddCompany from './pages/companies/AddCompany';
 import VerifyEmail from './pages/auth/VerifyEmail';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import { getStoredUser } from './services/auth';
+import LegalFooter from './components/common/LegalFooter';
 
 const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: string }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isActive = location.pathname.startsWith(to);
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isActive) return;
+    event.preventDefault();
+    navigate(to, { replace: true, state: { resetKey: Date.now() } });
+  };
 
   return (
     <Link
       to={to}
+      onClick={handleClick}
       className={`flex items-center space-x-4 px-6 py-4 transition-all duration-300 ${
         isActive ? 'sidebar-active text-white bg-white/5' : 'text-slate-500 hover:text-slate-300'
       }`}
@@ -29,9 +46,16 @@ const SidebarItem = ({ to, icon, label }: { to: string; icon: string; label: str
 };
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
   const user = getStoredUser();
   const displayName = user?.name ?? user?.email ?? 'Unknown User';
   const displayMeta = user?.email ?? 'Signed in';
+  const resetKey = (location.state as { resetKey?: number } | null)?.resetKey;
+
+  useEffect(() => {
+    if (!resetKey) return;
+    window.scrollTo(0, 0);
+  }, [resetKey]);
 
   return (
     <div className="flex h-screen w-full bg-[#050505]">
@@ -79,7 +103,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             title="Spline Background"
           ></iframe>
         </div>
-        <div className="relative z-10 p-10 max-w-7xl mx-auto">{children}</div>
+        <div className="relative z-10 p-10 max-w-7xl mx-auto">
+          {children}
+          <LegalFooter />
+        </div>
       </main>
     </div>
   );
@@ -97,6 +124,8 @@ const App: React.FC = () => {
         <Route path="/decision-room/notices" element={<DashboardLayout children={<NoticesPage />} />} />
         <Route path="/decision-room/qna" element={<DashboardLayout children={<QnaPage />} />} />
         <Route path="/auth/verify-email" element={<VerifyEmail />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
       </Routes>
     </Router>
   );

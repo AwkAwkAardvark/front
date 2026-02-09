@@ -1,10 +1,16 @@
 import React from 'react';
+import AdminUserSwitch from '../common/AdminUserSwitch';
+import { AdminViewUser } from '../../types/adminView';
 
 interface CompaniesHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onAddCompanyClick: () => void;
   onLogout?: () => void;
+  showAdminSwitch?: boolean;
+  adminUsers?: AdminViewUser[];
+  selectedAdminUserId?: string;
+  onAdminUserChange?: (userId: string) => void;
 }
 
 const CompaniesHeader: React.FC<CompaniesHeaderProps> = ({
@@ -12,6 +18,10 @@ const CompaniesHeader: React.FC<CompaniesHeaderProps> = ({
   onSearchChange,
   onAddCompanyClick,
   onLogout,
+  showAdminSwitch = false,
+  adminUsers = [],
+  selectedAdminUserId,
+  onAdminUserChange,
 }) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -22,6 +32,13 @@ const CompaniesHeader: React.FC<CompaniesHeaderProps> = ({
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {showAdminSwitch && onAdminUserChange && adminUsers.length > 0 && (
+          <AdminUserSwitch
+            users={adminUsers}
+            selectedUserId={selectedAdminUserId}
+            onChange={onAdminUserChange}
+          />
+        )}
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
           <i className="fas fa-search text-slate-500 text-sm"></i>
           <input

@@ -43,9 +43,12 @@ export interface CompanyKpiMini {
 export interface CompanySummary {
   id: string;
   name: string;
+  stockCode?: string | null;
   sector: Sector;
   overallScore: number;
   riskLevel: RiskLevel;
+  networkHealth?: number;
+  reputationScore?: number;
   lastUpdatedAt?: string;
   kpi?: CompanyKpiMini;
 }
@@ -53,11 +56,15 @@ export interface CompanySummary {
 export interface Company {
   id: string;
   name: string;
+  stockCode?: string | null;
   sector: Sector;
   overallScore: number;
   riskLevel: RiskLevel;
+  networkHealth?: number | null;
+  reputationScore?: number | null;
   tags?: string[];
   updatedAt?: string;
+  kpi?: CompanyKpiMini;
 }
 
 export interface CompanyKpiSummary {
@@ -131,6 +138,13 @@ export interface CompanyOverview {
   modelStatus: ModelStatus;
 }
 
+export interface CompanyAiAnalysisResponse {
+  company_code: string;
+  company_name: string;
+  base_period: string;
+  predictions: Record<string, number>;
+}
+
 export interface CompanySearchItem {
   companyId: number;
   corpName: string;
@@ -164,4 +178,20 @@ export interface CompanyTimelineItem {
   date: string;
   title: string;
   tone: 'positive' | 'neutral' | 'risk';
+}
+
+export interface CompanyInsightItem {
+  id: string | number;
+  title: string;
+  body?: string;
+  content?: string;
+  source?: string;
+  publishedAt?: string;
+  url?: string;
+  type?: 'REPORT' | 'NEWS';
+}
+
+export interface CompanyInsightsResponse {
+  averageScore?: number;
+  items: CompanyInsightItem[];
 }

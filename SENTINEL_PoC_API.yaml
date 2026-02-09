@@ -205,6 +205,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompanyOverview'
 
+  /companies/{companyId}/insights:
+    get:
+      tags: [Companies]
+      summary: Company report/news insights
+      description: >
+        Returns insights list for a company.
+
+        Use the `type` field to distinguish REPORT vs NEWS items.
+      parameters:
+        - in: path
+          name: companyId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Company insight list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompanyInsightItem'
+              example:
+                - id: c-001-report
+                  type: REPORT
+                  title: 2025년 4분기 사업보고서 요약
+                  body: >-
+                    매출은 전년 동기 대비 4.2% 성장했습니다.
+                    영업이익률은 개선되었으나 단기차입금 비중이 증가했습니다.
+                  source: 사업보고서
+                  publishedAt: 2026-02-01
+                - id: c-001-news-1
+                  type: NEWS
+                  title: 주요 공급 계약 연장 발표
+                  body: 주요 공급 계약이 2년 연장되며 매출 안정성이 강화되었습니다.
+                  source: 조선비즈
+                  publishedAt: 2026-02-03
+                  url: https://news.example.com/1
+                - id: c-001-news-2
+                  type: NEWS
+                  title: 신규 생산라인 투자 계획
+                  body: 신규 생산라인 투자로 생산량 확대와 원가 절감이 기대됩니다.
+                  source: 한국경제
+                  publishedAt: 2026-02-02
+                  url: https://news.example.com/2
+
   /companies/{companyId}/update-requests:
     post:
       tags: [UpdateRequests]
@@ -225,6 +272,58 @@ paths:
       responses:
         '201':
           description: Update request created successfully
+
+  /admin/posts/qna/{postId}/replies:
+    post:
+      tags: [Posts]
+      summary: QnA reply creation (admin)
+      description: Creates a reply for a QnA post as an administrator.
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QaReplyInput'
+      responses:
+        '200':
+          description: Reply created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QaReplyResponse'
+
+  /dashboard/risk-records:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard risk records for dwell time
+      description: Returns company risk records by quarter for dwell time calculation.
+      parameters:
+        - in: query
+          name: range
+          required: false
+          schema:
+            type: string
+          description: Quarter range string (e.g., 2024Q1~2025Q4)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Risk records list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompanyQuarterRisk'
 
 components:
   securitySchemes:
@@ -484,3 +583,77 @@ components:
         message:
           type: string
       required: [message]
+
+    QaReplyInput:
+      type: object
+      properties:
+        body:
+          type: string
+        author:
+          type: string
+      required: [body, author]
+
+    QaReplyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "r-100"
+            author:
+              type: string
+              example: "관리자명"
+            createdAt:
+              type: string
+              example: "2026-02-07T10:30:00"
+            body:
+              type: string
+              example: "답변 내용"
+        error:
+          type: object
+          nullable: true
+        timestamp:
+          type: string
+
+    CompanyQuarterRisk:
+      type: object
+      properties:
+        companyId:
+          type: string
+        companyName:
+          type: string
+        quarter:
+          type: string
+          description: Quarter label formatted as YYYYQn
+          example: 2025Q1
+        riskLevel:
+          type: string
+          enum: [MIN, WARN, RISK]
+
+    CompanyInsightItem:
+      type: object
+      properties:
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        title:
+          type: string
+        body:
+          type: string
+        content:
+          type: string
+        source:
+          type: string
+        publishedAt:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [REPORT, NEWS]

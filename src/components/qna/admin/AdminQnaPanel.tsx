@@ -13,6 +13,7 @@ type AdminQnaApi = {
     createdAt: string;
     body: string;
   }>;
+  deletePost?: (categoryName: string, postId: string | number) => Promise<void>;
   wasFallback?: () => boolean;
 };
 
@@ -32,6 +33,8 @@ const AdminQnaPanel: React.FC<AdminQnaPanelProps> = ({ api }) => {
   const [qaAuthorSort, setQaAuthorSort] = useState<AuthorSort>('recent');
   const [replyText, setReplyText] = useState<string>('');
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isFallback, setIsFallback] = useState(false);
 
   const loadQaPosts = useCallback(async () => {
@@ -143,6 +146,24 @@ const AdminQnaPanel: React.FC<AdminQnaPanelProps> = ({ api }) => {
     }
   }, [api, replyText, selectedPostId]);
 
+  const handleDeletePost = useCallback(async () => {
+    if (!selectedPostId || !api.deletePost || isDeleting) return;
+    const confirmed = window.confirm('선택한 질문을 삭제할까요?');
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deletePost('qna', selectedPostId);
+      setQaPosts((prev) => prev.filter((post) => post.id !== selectedPostId));
+      setSelectedPostId(null);
+    } catch (error) {
+      setDeleteError('질문 삭제에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [api, isDeleting, selectedPostId]);
+
   return (
     <div className="space-y-6">
       {isFallback && (
@@ -201,6 +222,23 @@ const AdminQnaPanel: React.FC<AdminQnaPanelProps> = ({ api }) => {
           onAddReply={handleAddReply}
           errorMessage={replyError}
           canReply
+          actionSlot={
+            selectedPost && api.deletePost ? (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleDeletePost}
+                  disabled={isDeleting}
+                  className="rounded-full border border-rose-500/40 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.3em] text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeleting ? '삭제 중' : '질문 삭제'}
+                </button>
+                {deleteError && (
+                  <span className="text-xs text-rose-300">{deleteError}</span>
+                )}
+              </div>
+            ) : null
+          }
         />
       </div>
     </div>

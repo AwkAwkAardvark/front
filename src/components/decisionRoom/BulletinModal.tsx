@@ -61,13 +61,12 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
       if (link.fileId) {
         setDownloadingId(link.fileId);
         try {
-          const response = await getFileDownloadUrl(link.fileId);
-          const url = response?.url;
-          if (!url) {
-            throw new Error('download url missing');
-          }
-
-          const downloadResponse = await fetch(url);
+          const token = getAuthToken();
+          const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+          const apiUrl = `${baseUrl}/api/files/${link.fileId}`;
+          const downloadResponse = await fetch(apiUrl, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
           if (!downloadResponse.ok) {
             throw new Error('download failed');
           }
@@ -95,7 +94,7 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 md:p-16">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose}></div>
       <div className="relative glass-panel w-full max-w-3xl max-h-full overflow-y-auto rounded-3xl p-10 shadow-2xl animate-in zoom-in-95 duration-300">
         <button
           onClick={onClose}

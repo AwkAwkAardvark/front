@@ -15,25 +15,25 @@ export type TrafficLight = 'green' | 'yellow' | 'red';
 export const getCompanyStatusLabel = (riskLevel: RiskLevel): string => {
   switch (riskLevel) {
     case 'SAFE':
-      return '정상';
+      return '양호';
     case 'WARN':
       return '주의';
     case 'RISK':
       return '위험';
     default:
-      return '정상';
+      return '양호';
   }
 };
 
 export const getCompanyStatusFromHealth = (score: number): string => {
   const tone = getHealthTone(score);
-  if (tone === 'good') return '정상';
+  if (tone === 'good') return '양호';
   if (tone === 'warn') return '주의';
   return '위험';
 };
 
 export const getCompanyHealthScore = (company: CompanySummary): number =>
-  company.kpi?.networkHealth ?? company.overallScore ?? 0;
+  company.networkHealth ?? company.kpi?.networkHealth ?? company.overallScore ?? 0;
 
 export const getHealthTone = (score: number): 'good' | 'warn' | 'risk' => {
   if (score >= 60) return 'good';
@@ -42,7 +42,7 @@ export const getHealthTone = (score: number): 'good' | 'warn' | 'risk' => {
 };
 
 export const getCompanyExternalHealthScore = (company: CompanySummary): number =>
-  company.kpi?.reputationScore ?? 0;
+  company.reputationScore ?? company.kpi?.reputationScore ?? 0;
 
 export const getMetricValue = (metrics: MetricItem[] | undefined, key: string): number | null => {
   if (!metrics) return null;
@@ -82,7 +82,8 @@ export const toMetricForecast = (forecast?: ForecastResponse) => {
     ALLOWED_METRIC_KEYS.map((key, index) => [key, index]),
   );
 
-  const normalizedSeries = forecast.metricSeries
+  const rawSeries = Array.isArray(forecast.metricSeries) ? forecast.metricSeries : [];
+  const normalizedSeries = rawSeries
     .map((series) => {
       const normalizedKey =
         METRIC_LABEL_MAP[series.key] ? series.key : LABEL_KEY_MAP[series.label] ?? series.key;

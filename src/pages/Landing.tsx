@@ -6,6 +6,7 @@ import { ApiRequestError } from '../api/client';
 import { getStoredUser, login, logout, register } from '../services/auth';
 import TurnstileWidget from '../components/TurnstileWidget';
 import SuccessModal from '../components/common/SuccessModal';
+import LegalLinks from '../components/common/LegalLinks';
 
 type AuthMode = 'login' | 'register';
 
@@ -607,6 +608,10 @@ const Landing: React.FC = () => {
               <a href="#" className="hover:text-white transition-colors">
                 X
               </a>
+            </div>
+            <div className="md:col-span-2 flex flex-col space-y-2">
+              <span className="text-white font-bold mb-2">정책</span>
+              <LegalLinks className="flex flex-col space-y-2" linkClassName="hover:text-white transition-colors" />
             </div>
           </div>
         </div>

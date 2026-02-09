@@ -8,6 +8,7 @@ interface QaThreadProps {
   onAddReply: () => void;
   errorMessage?: string | null;
   canReply?: boolean;
+  actionSlot?: React.ReactNode;
 }
 
 const QaThread: React.FC<QaThreadProps> = ({
@@ -17,6 +18,7 @@ const QaThread: React.FC<QaThreadProps> = ({
   onAddReply,
   errorMessage,
   canReply = true,
+  actionSlot,
 }) => {
   if (!post) {
     return (
@@ -65,6 +67,7 @@ const QaThread: React.FC<QaThreadProps> = ({
         )}
       </div>
 
+      {actionSlot && <div className="mt-6 flex items-center gap-3">{actionSlot}</div>}
       {canReply && (
         <div className="mt-6 border-t border-white/10 pt-4">
           <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">답변 등록</label>
@@ -74,7 +77,7 @@ const QaThread: React.FC<QaThreadProps> = ({
             placeholder="답변 내용을 입력해 주세요."
             className="mt-2 w-full min-h-[120px] bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-white/20"
           />
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex items-center justify-end">
             <button
               type="button"
               onClick={onAddReply}
