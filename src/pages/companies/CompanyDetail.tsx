@@ -206,7 +206,7 @@ const CompanyDetailPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-slate-500">
-                    <span>산업군 {detail.company.sector.label} · 기업 ID {detail.company.id}</span>
+                    <span>산업군 {detail.company.sector.label} · 기업 코드 {detail.company.id}</span>
                     {storedAdminViewUser && isAdminUser(currentUser) && (
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300">
                         보기: {storedAdminViewUser.name} · {storedAdminViewUser.email}
