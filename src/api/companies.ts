@@ -183,6 +183,10 @@ export interface AiReportRequestResponse {
   message?: string;
   completed?: boolean;
   isCompleted?: boolean;
+  fileId?: string;
+  downloadUrl?: string;
+  createdAt?: string;
+  completedAt?: string;
 }
 
 export const requestCompanyAiReport = async (
@@ -191,4 +195,13 @@ export const requestCompanyAiReport = async (
 ): Promise<AiReportRequestResponse> => {
   const url = buildUrl(`/api/companies/${companyCode}/ai-report/request`, params);
   return apiPost<AiReportRequestResponse, undefined>(url, undefined);
+};
+
+export const getCompanyAiReportStatus = async (
+  companyCode: string,
+  requestId: string,
+): Promise<AiReportRequestResponse> => {
+  return apiGet<AiReportRequestResponse>(
+    `/api/companies/${companyCode}/ai-report/status/${requestId}`,
+  );
 };

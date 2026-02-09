@@ -8,6 +8,7 @@ import {
   downloadCompanyAiReport,
   getCompanyInsights,
   getCompanyOverview,
+  getCompanyAiReportStatus,
   requestCompanyAiReport,
 } from '../../api/companies';
 import { getMockCompanyInsights, getMockCompanyOverview } from '../../mocks/companies.mock';
@@ -50,6 +51,7 @@ const CompanyDetailPage: React.FC = () => {
   const [reportYear, setReportYear] = useState<number | null>(null);
   const [reportQuarter, setReportQuarter] = useState<number | null>(null);
   const [reportCompletedKey, setReportCompletedKey] = useState<string | null>(null);
+  const [reportRequestId, setReportRequestId] = useState<string | null>(null);
   const reportTimerRef = useRef<number | null>(null);
   const currentUser = getStoredUser();
   const storedAdminViewUser = getStoredAdminViewUser();
@@ -114,6 +116,7 @@ const CompanyDetailPage: React.FC = () => {
     if (reportCompletedKey && reportCompletedKey !== nextKey) {
       setReportStatusMessage(null);
     }
+    setReportRequestId(null);
   }, [reportYear, reportQuarter, reportCompletedKey]);
 
   useEffect(() => {
@@ -197,6 +200,22 @@ const CompanyDetailPage: React.FC = () => {
     }
   };
 
+  const triggerReportDownload = async (downloadUrl: string, companyName: string) => {
+    const downloadResponse = await fetch(downloadUrl);
+    if (!downloadResponse.ok) {
+      throw new Error('download failed');
+    }
+    const blob = await downloadResponse.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${companyName.replace(/\s+/g, '')}_AI리포트.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const isReportCompleted = (status?: string, message?: string) => {
     const normalizedStatus = status?.toLowerCase() ?? '';
     const normalizedMessage = message ?? '';
@@ -209,18 +228,19 @@ const CompanyDetailPage: React.FC = () => {
     return false;
   };
 
-  const pollReportStatus = async (companyDetail: CompanyOverview) => {
+  const pollReportStatus = async (companyDetail: CompanyOverview, requestId: string) => {
     const year = reportYear ?? resolveReportPeriod(companyDetail).year;
     const quarter = reportQuarter ?? resolveReportPeriod(companyDetail).quarter;
     const companyCode = companyDetail.company.id;
     try {
-      const response = await requestCompanyAiReport(companyCode, { year, quarter });
+      const response = await getCompanyAiReportStatus(companyCode, requestId);
       if (isReportCompleted(response.status, response.message)) {
         setIsReportGenerating(false);
         setReportCompletedKey(`${year}-Q${quarter}`);
-        setReportStatusMessage(
-          `${year}년 Q${quarter} AI 분석 리포트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.`,
-        );
+        setReportStatusMessage('AI 분석 리포트 생성 완료됨');
+        if (response.downloadUrl) {
+          await triggerReportDownload(response.downloadUrl, companyDetail.company.name);
+        }
         clearReportTimer();
         return;
       }
@@ -237,7 +257,7 @@ const CompanyDetailPage: React.FC = () => {
     }
 
     reportTimerRef.current = window.setTimeout(() => {
-      void pollReportStatus(companyDetail);
+      void pollReportStatus(companyDetail, requestId);
     }, 10000);
   };
 
@@ -251,27 +271,35 @@ const CompanyDetailPage: React.FC = () => {
 
     const year = reportYear ?? resolveReportPeriod(detail).year;
     const quarter = reportQuarter ?? resolveReportPeriod(detail).quarter;
+    const companyCode = detail.company.id;
     const currentKey = `${year}-Q${quarter}`;
     if (reportCompletedKey === currentKey) {
       setIsReportGenerating(false);
-      setReportStatusMessage(
-        `${year}년 Q${quarter} AI 분석 리포트는 이미 생성 완료되었습니다. 다운로드 버튼을 눌러 주세요.`,
-      );
+      setReportStatusMessage('AI 분석 리포트 생성 완료됨');
+      if (reportRequestId) {
+        const status = await getCompanyAiReportStatus(companyCode, reportRequestId);
+        if (status.downloadUrl) {
+          await triggerReportDownload(status.downloadUrl, detail.company.name);
+        }
+      }
       return;
     }
 
     setReportStatusMessage(
       `${year}년 Q${quarter} AI 분석 리포트 생성 중입니다. (약 1~2분 소요)`,
     );
-    const companyCode = detail.company.id;
     try {
       const response = await requestCompanyAiReport(companyCode, { year, quarter });
+      if (response.requestId) {
+        setReportRequestId(response.requestId);
+      }
       if (isReportCompleted(response.status, response.message)) {
         setIsReportGenerating(false);
         setReportCompletedKey(currentKey);
-        setReportStatusMessage(
-          `${year}년 Q${quarter} AI 분석 리포트 생성이 완료되었습니다. 다운로드 버튼을 눌러 주세요.`,
-        );
+        setReportStatusMessage('AI 분석 리포트 생성 완료됨');
+        if (response.downloadUrl) {
+          await triggerReportDownload(response.downloadUrl, detail.company.name);
+        }
         return;
       }
 
@@ -279,9 +307,14 @@ const CompanyDetailPage: React.FC = () => {
         response.message ??
           `${year}년 Q${quarter} AI 분석 리포트 생성 중입니다. (약 1~2분 소요)`,
       );
-      reportTimerRef.current = window.setTimeout(() => {
-        void pollReportStatus(detail);
-      }, 10000);
+      if (response.requestId) {
+        reportTimerRef.current = window.setTimeout(() => {
+          void pollReportStatus(detail, response.requestId as string);
+        }, 10000);
+      } else {
+        setIsReportGenerating(false);
+        setReportStatusMessage('리포트 생성 요청 ID를 확인할 수 없습니다.');
+      }
     } catch (error) {
       setIsReportGenerating(false);
       setReportStatusMessage('AI 분석 리포트 생성 요청에 실패했습니다.');
