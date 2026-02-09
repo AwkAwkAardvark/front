@@ -181,18 +181,6 @@ const makeKeyMetrics = (company: CompanySummary): MetricItem[] => [
       actionHint: '하락 시 외부 이슈 모니터링과 커뮤니케이션을 점검하세요.',
     },
   },
-  {
-    key: 'EXTERNAL_REPUTATION',
-    label: '외부 기업 평판',
-    value: company.kpi?.reputationScore ?? null,
-    unit: '점',
-    tooltip: {
-      description:
-        '외부 뉴스·커뮤니티·공시 텍스트 등 비정형 데이터를 분석해 평판 점수를 산출합니다.',
-      interpretation: '최근 30일 언급량과 감성을 종합한 지표입니다.',
-      actionHint: '부정 키워드 급증 시 커뮤니케이션 전략을 점검하세요.',
-    },
-  },
 ];
 
 const makeSignals = (): SignalLight[] => [
