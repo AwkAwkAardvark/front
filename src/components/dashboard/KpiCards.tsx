@@ -52,12 +52,14 @@ const KPI_FALLBACKS: Record<
 > = {
   ACTIVE_COMPANIES: {
     icon: 'fa-users',
-    title: '활성 관심기업',
-    tooltip: { description: '로그인 사용자의 현재 워치리스트 기업 수입니다.' },
+    title: '전체 협력사 수',
+    unit: '개',
+    tooltip: { description: '현재 모니터링 중인 전체 협력사 수입니다.' },
   },
   RISK_COMPANIES: {
     icon: 'fa-triangle-exclamation',
     title: '고위험 기업 수',
+    unit: '개',
     tooltip: { description: '최신 ACTUAL 분기에서 위험(RISK)으로 분류된 기업 수입니다.' },
   },
   CAUTION_RATE: {
@@ -119,7 +121,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ kpis }) => {
     const fallback = KPI_FALLBACKS[key];
     return {
       key,
-      label: kpi?.title ?? fallback.title,
+      label: key === 'ACTIVE_COMPANIES' ? fallback.title : kpi?.title ?? fallback.title,
       valueText: formatValue(kpi?.value),
       unit: kpi?.unit ?? fallback.unit,
       delta: createDelta(kpi?.delta, key === 'RISK_DWELL_TIME' ? '지난 분기 대비' : '전기 대비'),
