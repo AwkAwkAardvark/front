@@ -244,13 +244,13 @@ const Landing: React.FC = () => {
 
       {/* Auth Portal Overlay */}
       {showAuth && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-300">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-2xl"
             onClick={() => setShowAuth(false)}
           ></div>
 
-          <div className="relative glass-panel w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500">
+          <div className="relative my-4 sm:my-0 glass-panel w-full max-w-md rounded-[2.5rem] p-10 sm:p-12 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowAuth(false)}
               className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors"
