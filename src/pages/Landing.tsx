@@ -41,6 +41,8 @@ const Landing: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [agreedPrivacyPolicy, setAgreedPrivacyPolicy] = useState(false);
+  const [agreedTermsOfService, setAgreedTermsOfService] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -57,8 +59,13 @@ const Landing: React.FC = () => {
   useEffect(() => {
     if (authMode !== 'register') {
       setTurnstileToken('');
+      setAgreedPrivacyPolicy(false);
+      setAgreedTermsOfService(false);
     }
   }, [authMode]);
+
+  const isRegisterAgreementCompleted = agreedPrivacyPolicy && agreedTermsOfService;
+  const isRegisterFormLocked = authMode === 'register' && !isRegisterAgreementCompleted;
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +74,11 @@ const Landing: React.FC = () => {
     const trimmedName = name.trim();
     const emailPattern = /^\S+@\S+\.\S+$/;
     const isRegister = authMode === 'register';
+
+    if (isRegister && !isRegisterAgreementCompleted) {
+      setAuthError('개인정보 처리방침과 이용약관에 모두 동의해 주세요.');
+      return;
+    }
 
     if (!trimmedEmail) {
       nextErrors.email = '이메일을 입력해 주세요.';
@@ -177,6 +189,8 @@ const Landing: React.FC = () => {
     setDuplicateEmailError(null);
     setConfirmPassword('');
     setTurnstileToken('');
+    setAgreedPrivacyPolicy(false);
+    setAgreedTermsOfService(false);
   };
 
   const handleTurnstileVerify = useCallback((token: string) => {
@@ -258,6 +272,52 @@ const Landing: React.FC = () => {
 
             <form onSubmit={handleAuthSubmit} className="space-y-5">
               {authMode === 'register' && (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={agreedPrivacyPolicy}
+                      onChange={(e) => setAgreedPrivacyPolicy(e.target.checked)}
+                      className="h-4 w-4 accent-white"
+                    />
+                    <span>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalType('privacy')}
+                        className="underline underline-offset-2 hover:text-white"
+                      >
+                        개인정보 처리방침
+                      </button>{' '}
+                      동의 (필수)
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={agreedTermsOfService}
+                      onChange={(e) => setAgreedTermsOfService(e.target.checked)}
+                      className="h-4 w-4 accent-white"
+                    />
+                    <span>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalType('terms')}
+                        className="underline underline-offset-2 hover:text-white"
+                      >
+                        이용약관
+                      </button>{' '}
+                      동의 (필수)
+                    </span>
+                  </label>
+                  {!isRegisterAgreementCompleted && (
+                    <p className="text-[11px] text-slate-400">
+                      필수 약관 동의 후 회원가입 입력이 가능합니다.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {authMode === 'register' && (
                 <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                   <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
                     이름
@@ -270,6 +330,7 @@ const Landing: React.FC = () => {
                     placeholder="이름을 입력해 주세요."
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.name)}
+                    disabled={isRegisterFormLocked}
                   />
                   {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
                   {serverFieldErrors.name && (
@@ -300,6 +361,7 @@ const Landing: React.FC = () => {
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={duplicateEmailError ? 'duplicate-email-tooltip' : undefined}
+                  disabled={isRegisterFormLocked}
                 />
                 {duplicateEmailError && (
                   <p id="duplicate-email-tooltip" role="alert" className="text-xs text-red-400">
@@ -326,6 +388,7 @@ const Landing: React.FC = () => {
                   placeholder="********"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.password)}
+                  disabled={isRegisterFormLocked}
                 />
                 {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
                 {serverFieldErrors.password && (
@@ -348,6 +411,7 @@ const Landing: React.FC = () => {
                     placeholder="********"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.confirmPassword)}
+                    disabled={isRegisterFormLocked}
                   />
                   {errors.confirmPassword && (
                     <p className="text-xs text-red-400">{errors.confirmPassword}</p>
@@ -360,16 +424,11 @@ const Landing: React.FC = () => {
                 </div>
               )}
 
-              {authMode === 'register' && (
+              {authMode === 'register' && isRegisterAgreementCompleted && (
                 <TurnstileWidget
                   key={turnstileResetKey}
                   className="mt-2"
-                  onVerify={(token) => {
-                    setTurnstileToken(token);
-                    if (token) {
-                      setAuthError(null);
-                    }
-                  }}
+                  onVerify={handleTurnstileVerify}
                 />
               )}
 
@@ -378,7 +437,11 @@ const Landing: React.FC = () => {
               <button
                 type="submit"
                 className="w-full py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-xl mt-4 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={isSubmitting || (authMode === 'register' && !turnstileToken)}
+                disabled={
+                  isSubmitting ||
+                  (authMode === 'register' &&
+                    (!isRegisterAgreementCompleted || !turnstileToken))
+                }
               >
                 {isSubmitting ? '처리 중..' : authMode === 'login' ? '로그인' : '가입'}
               </button>
