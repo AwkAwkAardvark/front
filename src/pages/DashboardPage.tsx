@@ -159,8 +159,8 @@ const DashboardPage: React.FC = () => {
 
       {isLoading && (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={`kpi-skeleton-${index}`}
                 className="glass-panel p-6 rounded-2xl animate-pulse"

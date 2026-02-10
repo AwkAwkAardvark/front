@@ -40,6 +40,61 @@ const formatDeltaValue = (delta: NonNullable<KpiCardDto['delta']>): string => {
   return `${sign}${valueText}${delta.unit ?? ''}`;
 };
 
+const KPI_ORDER = [
+  'ACTIVE_COMPANIES',
+  'RISK_COMPANIES',
+  'CAUTION_RATE',
+  'NETWORK_STATUS',
+  'RISK_INDEX',
+  'RISK_DWELL_TIME',
+] as const;
+
+const KPI_FALLBACKS: Record<
+  string,
+  { icon: string; title: string; unit?: string; tooltip: NonNullable<KpiCardDto['tooltip']> }
+> = {
+  ACTIVE_COMPANIES: {
+    icon: 'fa-users',
+    title: '활성 관심기업',
+    tooltip: { description: '로그인 사용자의 현재 워치리스트 기업 수입니다.' },
+  },
+  RISK_COMPANIES: {
+    icon: 'fa-triangle-exclamation',
+    title: '고위험 기업 수',
+    tooltip: { description: '최신 ACTUAL 분기에서 위험(RISK)으로 분류된 기업 수입니다.' },
+  },
+  CAUTION_RATE: {
+    icon: 'fa-bell',
+    title: '주의 비율',
+    unit: '%',
+    tooltip: { description: '최신 ACTUAL 분기에서 주의(CAUTION) 상태의 비율입니다.' },
+  },
+  NETWORK_STATUS: {
+    icon: 'fa-heartbeat',
+    title: '네트워크 상태',
+    tooltip: { description: '활성 관심기업의 최신 ACTUAL 분기 internal_health_score 평균입니다.' },
+  },
+  RISK_INDEX: {
+    icon: 'fa-shield-halved',
+    title: '위험 지수',
+    tooltip: {
+      description: '포트폴리오 전체 위험 수준 요약 지표입니다.',
+      interpretation: '주의·위험 구간 증가 시 원인 분석이 필요합니다.',
+      actionHint: '위험 상위 협력사부터 상세 지표를 확인하세요.',
+    },
+  },
+  RISK_DWELL_TIME: {
+    icon: 'fa-hourglass-half',
+    title: '리스크 체류 기간',
+    unit: '분기',
+    tooltip: {
+      description: '주의/위험 상태에 머무른 평균 기간(분기 수)입니다.',
+      interpretation: '낮을수록 리스크 구간에서 빠르게 회복합니다.',
+      actionHint: '체류 기간이 긴 기업을 우선 점검하세요.',
+    },
+  },
+};
+
 const KpiCards: React.FC<KpiCardsProps> = ({ kpis, riskRecords }) => {
   const { currentWindow, previousWindow } = useMemo(
     () => getRecentQuarterWindows(riskRecords, 4),
@@ -55,10 +110,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ kpis, riskRecords }) => {
   const dwellTone: 'positive' | 'negative' | 'neutral' =
     dwellDelta === null || dwellDelta === 0 ? 'neutral' : dwellDelta > 0 ? 'negative' : 'positive';
 
-  const activeKpi = findKpi(kpis, ['ACTIVE_COMPANIES']);
   const dwellKpi = findKpi(kpis, ['RISK_DWELL_TIME', 'RISK_DWELL']);
-  const riskIndexKpi = findKpi(kpis, ['RISK_INDEX']);
-  const networkKpi = findKpi(kpis, ['NETWORK_STATUS', 'NETWORK_HEALTH']);
 
   const createDelta = (
     delta?: KpiCardDto['delta'],
@@ -87,63 +139,39 @@ const KpiCards: React.FC<KpiCardsProps> = ({ kpis, riskRecords }) => {
           label: '지난 분기 대비',
         };
 
-  const cards = [
-    {
-      label: activeKpi?.title ?? '활성 관심기업',
-      valueText: formatValue(activeKpi?.value),
-      unit: activeKpi?.unit ?? undefined,
-      delta: createDelta(activeKpi?.delta),
-      icon: 'fa-users',
-      tone: toTone(activeKpi?.tone),
-      tooltip: activeKpi?.tooltip ?? {
-        description: '로그인 사용자의 현재 워치리스트 기업 수입니다.',
-      },
-    },
-    {
-      label: dwellKpi?.title ?? '리스크 체류 기간',
-      valueText: dwellKpi ? formatValue(dwellKpi.value) : dwellValueText,
-      unit: dwellKpi?.unit ?? '분기',
-      delta: dwellDeltaFromSummary ?? computedDwellDelta,
-      icon: 'fa-hourglass-half',
-      tone: dwellKpi ? toTone(dwellKpi.tone) : dwellTone,
-      tooltip: dwellKpi?.tooltip ?? {
-        description: "주의/위험 상태에 머무른 평균 기간(분기 수)입니다.",
-        interpretation: '낮을수록 리스크 구간에서 빠르게 회복합니다.',
-        actionHint: '체류 기간이 긴 기업을 우선 점검하세요.',
-      },
-    },
-    {
-      label: riskIndexKpi?.title ?? '위험 지수',
-      valueText: formatValue(riskIndexKpi?.value),
-      unit: riskIndexKpi?.unit ?? undefined,
-      delta: createDelta(riskIndexKpi?.delta),
-      icon: 'fa-shield-halved',
-      tone: toTone(riskIndexKpi?.tone),
-      tooltip: riskIndexKpi?.tooltip ?? {
-        description: '포트폴리오 전체 위험 수준 요약 지표입니다.',
-        interpretation: '주의·위험 구간 증가 시 원인 분석이 필요합니다.',
-        actionHint: '위험 상위 협력사부터 상세 지표를 확인하세요.',
-      },
-    },
-    {
-      label: networkKpi?.title ?? '네트워크 상태',
-      valueText: formatValue(networkKpi?.value),
-      unit: networkKpi?.unit ?? undefined,
-      delta: createDelta(networkKpi?.delta),
-      icon: 'fa-heartbeat',
-      tone: toTone(networkKpi?.tone),
-      tooltip: networkKpi?.tooltip ?? {
-        description: '활성 관심기업의 최신 ACTUAL 분기 internal_health_score 평균입니다.',
-      },
-    },
-  ];
+  // summary 응답에서 내려온 KPI 순서를 기준으로 최대 6개 카드를 노출합니다.
+  const cards = KPI_ORDER.map((key) => {
+    const aliases =
+      key === 'NETWORK_STATUS'
+        ? ['NETWORK_STATUS', 'NETWORK_HEALTH']
+        : key === 'RISK_DWELL_TIME'
+        ? ['RISK_DWELL_TIME', 'RISK_DWELL']
+        : [key];
+
+    const kpi = findKpi(kpis, aliases);
+    const fallback = KPI_FALLBACKS[key];
+    const isDwellTime = key === 'RISK_DWELL_TIME';
+
+    return {
+      key,
+      label: kpi?.title ?? fallback.title,
+      valueText: isDwellTime && !kpi ? dwellValueText : formatValue(kpi?.value),
+      unit: kpi?.unit ?? fallback.unit,
+      delta: isDwellTime
+        ? dwellDeltaFromSummary ?? computedDwellDelta
+        : createDelta(kpi?.delta),
+      icon: fallback.icon,
+      tone: isDwellTime && !kpi ? dwellTone : toTone(kpi?.tone),
+      tooltip: kpi?.tooltip ?? fallback.tooltip,
+    };
+  });
 
   return (
-    <div className="relative z-20 grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <div className="relative z-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-10">
       {cards.map((stat) => {
         return (
           <KpiCard
-            key={stat.label}
+            key={stat.key}
             title={stat.label}
             value={stat.valueText}
             unit={stat.unit}
