@@ -525,7 +525,7 @@ const Landing: React.FC = () => {
 
       {/* 정책/약관 모달 */}
       {legalModalType && (
-        <div className="fixed inset-0 z-[94] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setLegalModalType(null)}
