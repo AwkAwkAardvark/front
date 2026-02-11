@@ -6,8 +6,18 @@ import { getAuthToken } from '../../services/auth';
 interface BulletinModalProps {
   open: boolean;
   bulletin: Bulletin | null;
+  postMeta?: {
+    isPinned: boolean;
+    status: string;
+  } | null;
   onClose: () => void;
   onDelete?: () => void;
+  onUpdate?: (payload: {
+    title: string;
+    content: string;
+    isPinned: boolean;
+    status: string;
+  }) => Promise<void> | void;
 }
 
 const tagStyles: Record<string, string> = {
@@ -16,9 +26,23 @@ const tagStyles: Record<string, string> = {
   ADVISORY: 'text-sky-300 border-sky-900 bg-sky-950/40',
 };
 
-const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, onDelete }) => {
+const BulletinModal: React.FC<BulletinModalProps> = ({
+  open,
+  bulletin,
+  postMeta,
+  onClose,
+  onDelete,
+  onUpdate,
+}) => {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editPinned, setEditPinned] = useState(false);
+  const [editStatus, setEditStatus] = useState('ACTIVE');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const triggerDownload = (url: string, filename: string) => {
     const anchor = document.createElement('a');
@@ -90,6 +114,48 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
     [],
   );
 
+  const canEdit = Boolean(onUpdate);
+
+  React.useEffect(() => {
+    if (!open || !bulletin) return;
+    setIsEditMode(false);
+    setEditError(null);
+    setEditTitle(bulletin.title);
+    setEditContent(bulletin.body);
+    setEditPinned(Boolean(postMeta?.isPinned));
+    setEditStatus(postMeta?.status ?? 'ACTIVE');
+  }, [bulletin, open, postMeta?.isPinned, postMeta?.status]);
+
+  const handleUpdateClick = async () => {
+    if (!onUpdate) return;
+    if (!isEditMode) {
+      setIsEditMode(true);
+      setEditError(null);
+      return;
+    }
+
+    if (!editTitle.trim() || !editContent.trim()) {
+      setEditError('제목과 내용을 모두 입력해 주세요.');
+      return;
+    }
+
+    setIsSaving(true);
+    setEditError(null);
+    try {
+      await onUpdate({
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        isPinned: editPinned,
+        status: editStatus,
+      });
+      setIsEditMode(false);
+    } catch (error) {
+      setEditError('공지 수정에 실패했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!open || !bulletin) return null;
 
   return (
@@ -111,9 +177,47 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
           >
             {bulletin.tag}
           </span>
-          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">
-            {bulletin.title}
-          </h2>
+          {isEditMode ? (
+            <div className="space-y-4 mb-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">제목</label>
+                <input
+                  value={editTitle}
+                  onChange={(event) => setEditTitle(event.target.value)}
+                  className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-white/20"
+                  placeholder="공지 제목을 입력하세요."
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="flex items-center gap-2 text-xs text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={editPinned}
+                    onChange={(event) => setEditPinned(event.target.checked)}
+                  />
+                  고정 공지
+                </label>
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">상태</label>
+                  <select
+                    value={editStatus}
+                    onChange={(event) => setEditStatus(event.target.value)}
+                    className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-white/20"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="PUBLISHED">PUBLISHED</option>
+                    <option value="HIDDEN">HIDDEN</option>
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4">
+              {bulletin.title}
+            </h2>
+          )}
           <div className="flex flex-wrap items-center text-[10px] text-slate-500 uppercase tracking-widest gap-4">
             <span>
               <i className="fas fa-calendar-alt mr-2"></i>
@@ -126,13 +230,26 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
           </div>
         </div>
 
-        <div className="space-y-5 text-slate-300 leading-relaxed text-sm">
-          {bulletin.body.split('\n').map((line, index) => (
-            <p key={`${bulletin.id}-line-${index}`} className="text-slate-300">
-              {line}
-            </p>
-          ))}
-        </div>
+        {isEditMode ? (
+          <div className="space-y-3">
+            <label className="text-[10px] uppercase tracking-[0.3em] text-slate-500">내용</label>
+            <textarea
+              value={editContent}
+              onChange={(event) => setEditContent(event.target.value)}
+              className="w-full min-h-[220px] bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-white/20"
+              placeholder="공지 내용을 입력하세요."
+            />
+            {editError && <p className="text-xs text-rose-400">{editError}</p>}
+          </div>
+        ) : (
+          <div className="space-y-5 text-slate-300 leading-relaxed text-sm">
+            {bulletin.body.split('\n').map((line, index) => (
+              <p key={`${bulletin.id}-line-${index}`} className="text-slate-300">
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
 
         <div className="mt-8 p-6 bg-white/5 border border-white/5 rounded-2xl">
           <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest">Attachments</p>
@@ -167,13 +284,37 @@ const BulletinModal: React.FC<BulletinModalProps> = ({ open, bulletin, onClose, 
           </div>
         </div>
 
-        <div className="mt-10 flex justify-end">
-          <button
-            onClick={onDelete ?? onClose}
-            className="bg-white text-black px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-all"
-          >
-            {onDelete ? '삭제' : '닫기'}
-          </button>
+        <div className="mt-10 flex items-center justify-between">
+          <div>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="rounded-full border border-rose-500/40 px-6 py-3 text-[10px] font-bold uppercase tracking-[0.3em] text-rose-200 transition hover:bg-rose-500/10"
+              >
+                삭제
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={handleUpdateClick}
+                disabled={isSaving}
+                className="rounded-full border border-white/20 px-6 py-3 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isEditMode ? (isSaving ? '저장 중' : '저장') : '수정'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-white text-black px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-all"
+            >
+              닫기
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -10,6 +10,8 @@ interface QaComposerProps {
   onClose: () => void;
   errorMessage?: string | null;
   isSubmitDisabled?: boolean;
+  heading?: string;
+  submitLabel?: string;
 }
 
 const QaComposer: React.FC<QaComposerProps> = ({
@@ -22,6 +24,8 @@ const QaComposer: React.FC<QaComposerProps> = ({
   onClose,
   errorMessage,
   isSubmitDisabled,
+  heading = '질문 작성',
+  submitLabel = '저장',
 }) => {
   if (!open) return null;
 
@@ -36,7 +40,7 @@ const QaComposer: React.FC<QaComposerProps> = ({
           <i className="fas fa-times"></i>
         </button>
 
-        <h3 className="text-2xl font-semibold tracking-tight text-white mb-6">질문 작성</h3>
+        <h3 className="text-2xl font-semibold tracking-tight text-white mb-6">{heading}</h3>
 
         <div className="space-y-4">
           <div>
@@ -78,7 +82,7 @@ const QaComposer: React.FC<QaComposerProps> = ({
                 : 'bg-white text-black hover:bg-slate-200'
             }`}
           >
-            저장
+            {submitLabel}
           </button>
         </div>
         {errorMessage && <p className="mt-4 text-xs text-rose-400">{errorMessage}</p>}

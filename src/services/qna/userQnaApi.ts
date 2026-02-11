@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, ApiRequestError } from '../../api/client';
+import { apiDelete, apiGet, apiPatch, apiPost, ApiRequestError } from '../../api/client';
 import { QaPost, QaPostInput } from '../../types/decisionRoom';
 import { getMockQaPostsForUser } from '../../mocks/decisionRoom.mock';
 import { getStoredUser } from '../auth';
@@ -118,6 +118,20 @@ export const userQnaApi = {
       },
     );
     return toQaPost(response, readStoredReplies(), input.author);
+  },
+  updatePost: async (
+    postId: string,
+    input: { title: string; body: string },
+    categoryName = 'qna',
+  ): Promise<QaPost> => {
+    const response = await apiPatch<PostResponse, { title: string; content: string }>(
+      `/api/posts/${categoryName}/${postId}`,
+      {
+        title: input.title,
+        content: input.body,
+      },
+    );
+    return toQaPost(response, readStoredReplies(), getStoredUser()?.name);
   },
   deletePost: async (postId: string, categoryName = 'qna'): Promise<void> =>
     apiDelete<void>(`/api/posts/${categoryName}/${postId}`),
