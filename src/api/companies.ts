@@ -12,7 +12,6 @@ import {
   UpdateRequestCreate,
 } from '../types/company';
 import { DashboardSummary } from '../types/dashboard';
-import { CompanyQuarterRisk } from '../types/risk';
 import { getAuthToken } from '../services/auth';
 
 const resolveBaseUrl = () => (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
@@ -41,12 +40,9 @@ export const searchCompanies = async (params: {
   code?: string;
 }): Promise<CompanySearchResponse> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  const normalizedParams =
-    params.keyword && !params.name && !params.code
-      ? { ...params, name: params.keyword }
-      : params;
+  const query = params.keyword ?? params.name ?? params.code;
 
-  return apiGet<CompanySearchResponse>('/api/companies/search', normalizedParams);
+  return apiGet<CompanySearchResponse>('/api/companies/search', { query });
 };
 
 export const confirmCompany = async (
@@ -83,7 +79,12 @@ export const listCompanies = async (params?: {
   userId?: string;
 }): Promise<CompanySummary[]> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<CompanySummary[]>('/api/companies', params);
+  if (params?.userId) {
+    return apiGet<CompanySummary[]>('/api/admin/companies', params);
+  }
+
+  const { userId, ...restParams } = params ?? {};
+  return apiGet<CompanySummary[]>('/api/companies/me', restParams);
 };
 
 export const getCompanySummary = async (
@@ -99,7 +100,10 @@ export const getCompanyOverview = async (
   params?: { userId?: string; quarterKey?: string },
 ): Promise<CompanyOverview> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
-  return apiGet<CompanyOverview>(`/api/companies/${companyId}/overview`, params);
+  if (params?.userId) {
+    return apiGet<CompanyOverview>(`/api/admin/companies/${companyId}/overview`, params);
+  }
+  return apiGet<CompanyOverview>(`/api/companies/${companyId}`, params);
 };
 
 export const getCompanyInsights = async (
@@ -108,7 +112,7 @@ export const getCompanyInsights = async (
 ): Promise<CompanyInsightItem[]> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
   const response = await apiGet<CompanyInsightItem[] | CompanyInsightsResponse>(
-    `/api/companies/${companyId}/insights`,
+    params?.userId ? `/api/admin/companies/${companyId}/insights` : `/api/companies/${companyId}/insights`,
     params,
   );
 
@@ -123,15 +127,10 @@ export const getDashboardSummary = async (params?: {
   userId?: string;
 }): Promise<DashboardSummary> => {
   // TODO(API 연결): 더미 데이터 제거 후 이 함수 사용
+  if (params?.userId) {
+    return apiGet<DashboardSummary>('/api/admin/dashboard/summary', params);
+  }
   return apiGet<DashboardSummary>('/api/dashboard/summary', params);
-};
-
-export const getDashboardRiskRecords = async (params?: {
-  range?: string;
-  limit?: number;
-  userId?: string;
-}): Promise<CompanyQuarterRisk[]> => {
-  return apiGet<CompanyQuarterRisk[]>('/api/dashboard/risk-records', params);
 };
 
 export const createUpdateRequest = async (
@@ -150,7 +149,7 @@ export const getCompanyAiAnalysis = async (
   params?: { year?: number; quarter?: number; userId?: string },
 ): Promise<CompanyAiAnalysisResponse> => {
   return apiGet<CompanyAiAnalysisResponse>(
-    `/api/companies/${companyId}/ai-analysis`,
+    `/api/companies/${companyId}/analysis`,
     params,
   );
 };
@@ -159,7 +158,7 @@ export const downloadCompanyAiReport = async (
   companyId: string,
   params: { year: number; quarter: number; userId?: string },
 ): Promise<Blob> => {
-  const url = buildUrl(`/api/companies/${companyId}/ai-report/download`, params);
+  const url = buildUrl(`/api/companies/${companyId}/ai-reports/file`, params);
   const token = getAuthToken();
   const response = await fetch(url, {
     method: 'GET',
@@ -193,7 +192,7 @@ export const requestCompanyAiReport = async (
   companyId: string,
   params: { year: number; quarter: number; userId?: string },
 ): Promise<AiReportRequestResponse> => {
-  const url = buildUrl(`/api/companies/${companyId}/ai-report/request`, params);
+  const url = buildUrl(`/api/companies/${companyId}/ai-reports/requests`, params);
   return apiPost<AiReportRequestResponse, undefined>(url, undefined);
 };
 
@@ -202,6 +201,6 @@ export const getCompanyAiReportStatus = async (
   requestId: string,
 ): Promise<AiReportRequestResponse> => {
   return apiGet<AiReportRequestResponse>(
-    `/api/companies/${companyId}/ai-report/status/${requestId}`,
+    `/api/companies/${companyId}/ai-reports/requests/${requestId}`,
   );
 };
