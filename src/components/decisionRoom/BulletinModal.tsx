@@ -204,11 +204,21 @@ const BulletinModal: React.FC<BulletinModalProps> = ({
                     onChange={(event) => setEditStatus(event.target.value)}
                     className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-white/20"
                   >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="PUBLISHED">PUBLISHED</option>
-                    <option value="HIDDEN">HIDDEN</option>
-                    <option value="DRAFT">DRAFT</option>
-                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="ACTIVE" className="bg-slate-900 text-slate-100">
+                      ACTIVE
+                    </option>
+                    <option value="PUBLISHED" className="bg-slate-900 text-slate-100">
+                      PUBLISHED
+                    </option>
+                    <option value="HIDDEN" className="bg-slate-900 text-slate-100">
+                      HIDDEN
+                    </option>
+                    <option value="DRAFT" className="bg-slate-900 text-slate-100">
+                      DRAFT
+                    </option>
+                    <option value="INACTIVE" className="bg-slate-900 text-slate-100">
+                      INACTIVE
+                    </option>
                   </select>
                 </div>
               </div>
