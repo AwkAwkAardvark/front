@@ -6,6 +6,7 @@
 - email: jordie_Jin@github.com
 
 ## 2. Recent Notes (최근 메모)
+- 2026-02-10 | 작업: 미사용 서비스/타입/유틸 파일 정리 | 결과: model 서비스·타입과 KPI 유틸 파일 삭제 후 타입체크 통과 확인 | 이슈: 없음
 - 2026-02-10 | 작업: 미사용 pages/api mock 라우트 제거 | 결과: companies/model mock API 파일 3개 삭제로 mockApi import 오류 원인 제거 | 이슈: 없음
 - 2026-02-10 | 작업: 프론트 UX 전략 문서 작성/보강 | 결과: UI/UX 사용자 친화 전략과 시나리오별 정량 비교를 docs 문서로 정리 | 이슈: 실측 로그 기반 재보정 필요
 - 2026-02-10 | 작업: 관리자 계정 기업 추가 Confirm 비활성화 | 결과: Add Company에서 관리자 계정은 Confirm 버튼/핸들러 모두 차단하고 안내 문구 표시 | 이슈: 없음
