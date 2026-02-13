@@ -1,9 +1,9 @@
-import { apiDelete, apiGet, apiPost, ApiRequestError } from '../../api/client';
+import { apiDelete, apiGet, apiPatch, apiPost, ApiRequestError } from '../../api/client';
 import { QaPost, QaPostInput } from '../../types/decisionRoom';
 import { getMockQaPostsForUser } from '../../mocks/decisionRoom.mock';
 import { getStoredUser } from '../auth';
 
-const USER_QNA_BASE = '/api/posts/qna';
+const USER_QNA_BASE = '/api/posts';
 const ADMIN_REPLY_STORAGE_KEY = 'sentinel:qna:admin-replies:v1';
 let lastFallback = false;
 
@@ -91,7 +91,7 @@ export const userQnaApi = {
     try {
       const response = await apiGet<PostResponse[] | { content?: PostResponse[] }>(
         USER_QNA_BASE,
-        { page: 1, size: 50 },
+        { categoryName: 'qna', page: 1, size: 50 },
       );
       const items = Array.isArray(response) ? response : response.content ?? [];
       const store = readStoredReplies();
@@ -110,16 +110,34 @@ export const userQnaApi = {
   },
 
   createPost: async (input: QaPostInput): Promise<QaPost> => {
-    const response = await apiPost<PostResponse, { title: string; content: string }>(
+    const response = await apiPost<
+      PostResponse,
+      { categoryName: string; title: string; content: string }
+    >(
       USER_QNA_BASE,
       {
+        categoryName: 'qna',
         title: input.title,
         content: input.body,
       },
     );
     return toQaPost(response, readStoredReplies(), input.author);
   },
+  updatePost: async (
+    postId: string,
+    input: { title: string; body: string },
+    categoryName = 'qna',
+  ): Promise<QaPost> => {
+    const response = await apiPatch<PostResponse, { title: string; content: string }>(
+      `/api/posts/${postId}`,
+      {
+        title: input.title,
+        content: input.body,
+      },
+    );
+    return toQaPost(response, readStoredReplies(), getStoredUser()?.name);
+  },
   deletePost: async (postId: string, categoryName = 'qna'): Promise<void> =>
-    apiDelete<void>(`/api/posts/${categoryName}/${postId}`),
+    apiDelete<void>(`/api/posts/${postId}`),
   wasFallback: (): boolean => lastFallback,
 };

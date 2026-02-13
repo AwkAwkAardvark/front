@@ -14,21 +14,27 @@ export const listPosts = async (
   categoryName: string,
   params?: PostListParams,
 ): Promise<PostListData> => {
-  return apiGet<PostListData>(`/api/posts/${categoryName}`, params);
+  return apiGet<PostListData>('/api/posts', { ...params, categoryName });
 };
 
 export const getPost = async (
   categoryName: string,
   postId: number | string,
 ): Promise<PostItem> => {
-  return apiGet<PostItem>(`/api/posts/${categoryName}/${postId}`);
+  return apiGet<PostItem>(`/api/posts/${postId}`);
 };
 
 export const createPost = async (
   categoryName: string,
   payload: PostCreateRequest,
 ): Promise<PostItem> => {
-  return apiPost<PostItem, PostCreateRequest>(`/api/posts/${categoryName}`, payload);
+  return apiPost<PostItem, PostCreateRequest & { categoryName: string }>(
+    '/api/posts',
+    {
+      ...payload,
+      categoryName,
+    },
+  );
 };
 
 export const updatePost = async (
@@ -36,17 +42,14 @@ export const updatePost = async (
   postId: number | string,
   payload: PostUpdateRequest,
 ): Promise<PostItem> => {
-  return apiPatch<PostItem, PostUpdateRequest>(
-    `/api/posts/${categoryName}/${postId}`,
-    payload,
-  );
+  return apiPatch<PostItem, PostUpdateRequest>(`/api/posts/${postId}`, payload);
 };
 
 export const deletePost = async (
   categoryName: string,
   postId: number | string,
 ): Promise<string> => {
-  return apiDelete<string>(`/api/posts/${categoryName}/${postId}`);
+  return apiDelete<string>(`/api/posts/${postId}`);
 };
 
 export const listAdminPosts = async (
@@ -100,5 +103,5 @@ export const uploadPostFiles = async (
 };
 
 export const getFileDownloadUrl = async (fileId: number | string): Promise<{ url: string }> => {
-  return apiGet<{ url: string }>(`/api/files/${fileId}/url`);
+  return apiGet<{ url: string }>(`/api/files/${fileId}/download-url`);
 };

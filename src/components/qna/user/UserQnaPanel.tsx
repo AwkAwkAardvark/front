@@ -9,6 +9,11 @@ import { AuthUser } from '../../../types/auth';
 type UserQnaApi = {
   listPosts: () => Promise<QaPost[]>;
   createPost: (input: QaPostInput) => Promise<QaPost>;
+  updatePost?: (
+    postId: string,
+    input: { title: string; body: string },
+    categoryName?: string,
+  ) => Promise<QaPost>;
   deletePost?: (postId: string, categoryName?: string) => Promise<void>;
   wasFallback?: () => boolean;
 };
@@ -31,6 +36,8 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
   const [composerError, setComposerError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [isFallback, setIsFallback] = useState(false);
 
   const loadQaPosts = useCallback(async () => {
@@ -98,29 +105,63 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
     }
   }, [filteredQaPosts, selectedPostId]);
 
-  const handleCreatePost = useCallback(async () => {
+  const handleUpsertPost = useCallback(async () => {
     if (!composerTitle.trim() || !composerBody.trim()) {
       setComposerError('제목과 내용을 모두 입력해 주세요.');
       return;
     }
     setComposerError(null);
+    setIsSaving(true);
 
     try {
+      if (editingPostId && api.updatePost) {
+        const updated = await api.updatePost(
+          editingPostId,
+          {
+            title: composerTitle.trim(),
+            body: composerBody.trim(),
+          },
+          'qna',
+        );
+        setQaPosts((prev) =>
+          prev.map((post) => {
+            if (post.id !== editingPostId) return post;
+            return {
+              ...post,
+              ...updated,
+              replies: updated.replies.length > 0 ? updated.replies : post.replies,
+              status:
+                updated.replies.length > 0
+                  ? updated.status
+                  : post.replies.length > 0
+                  ? 'answered'
+                  : updated.status,
+            };
+          }),
+        );
+        setSelectedPostId(editingPostId);
+        setEditingPostId(null);
+      } else {
         const created = await api.createPost({
           title: composerTitle.trim(),
           body: composerBody.trim(),
           author: currentUser?.name ?? 'User',
           categoryId: 2,
         });
-      setQaPosts((prev) => [created, ...prev]);
-      setSelectedPostId(created.id);
+        setQaPosts((prev) => [created, ...prev]);
+        setSelectedPostId(created.id);
+      }
       setComposerTitle('');
       setComposerBody('');
       setComposerOpen(false);
     } catch (error) {
-      setComposerError('질문 등록에 실패했습니다. 다시 시도해 주세요.');
+      setComposerError(
+        editingPostId ? '질문 수정에 실패했습니다. 다시 시도해 주세요.' : '질문 등록에 실패했습니다. 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsSaving(false);
     }
-  }, [api, composerBody, composerTitle, currentUser?.name]);
+  }, [api, composerBody, composerTitle, currentUser?.name, editingPostId]);
 
   const handleDeletePost = useCallback(async () => {
     if (!selectedPostId || !api.deletePost || isDeleting) return;
@@ -140,6 +181,15 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
     }
   }, [api, isDeleting, selectedPostId]);
 
+  const handleStartEditPost = useCallback(() => {
+    if (!selectedPost || !api.updatePost) return;
+    setComposerError(null);
+    setEditingPostId(selectedPost.id);
+    setComposerTitle(selectedPost.title);
+    setComposerBody(selectedPost.body);
+    setComposerOpen(true);
+  }, [api.updatePost, selectedPost]);
+
   return (
     <div className="space-y-6">
       {isFallback && (
@@ -149,12 +199,15 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
       )}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h3 className="text-2xl font-light serif text-white mb-2">Company Q&amp;A</h3>
+          <h3 className="text-2xl font-semibold tracking-tight text-white mb-2">Company Q&amp;A</h3>
         </div>
         <button
           type="button"
           onClick={() => {
             setComposerError(null);
+            setEditingPostId(null);
+            setComposerTitle('');
+            setComposerBody('');
             setComposerOpen(true);
           }}
           className="px-5 py-2 rounded-full bg-white text-black text-[10px] uppercase tracking-[0.3em] font-semibold hover:bg-slate-200 transition"
@@ -189,16 +242,27 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
           onAddReply={() => {}}
           canReply={false}
           actionSlot={
-            selectedPost && api.deletePost ? (
+            selectedPost && (api.deletePost || api.updatePost) ? (
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleDeletePost}
-                  disabled={isDeleting}
-                  className="rounded-full border border-rose-500/40 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.3em] text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isDeleting ? '삭제 중' : '질문 삭제'}
-                </button>
+                {api.updatePost && (
+                  <button
+                    type="button"
+                    onClick={handleStartEditPost}
+                    className="rounded-full border border-white/20 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-100 transition hover:bg-white/10"
+                  >
+                    질문 수정
+                  </button>
+                )}
+                {api.deletePost && (
+                  <button
+                    type="button"
+                    onClick={handleDeletePost}
+                    disabled={isDeleting}
+                    className="rounded-full border border-rose-500/40 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.3em] text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isDeleting ? '삭제 중' : '질문 삭제'}
+                  </button>
+                )}
                 {deleteError && <span className="text-xs text-rose-300">{deleteError}</span>}
               </div>
             ) : null
@@ -218,10 +282,15 @@ const UserQnaPanel: React.FC<UserQnaPanelProps> = ({ api, currentUser }) => {
           setComposerError(null);
           setComposerBody(value);
         }}
-        onCreate={handleCreatePost}
-        onClose={() => setComposerOpen(false)}
+        onCreate={handleUpsertPost}
+        onClose={() => {
+          setComposerOpen(false);
+          setEditingPostId(null);
+        }}
         errorMessage={composerError}
-        isSubmitDisabled={!composerTitle.trim() || !composerBody.trim()}
+        isSubmitDisabled={!composerTitle.trim() || !composerBody.trim() || isSaving}
+        heading={editingPostId ? '질문 수정' : '질문 작성'}
+        submitLabel={isSaving ? '저장 중' : '저장'}
       />
     </div>
   );

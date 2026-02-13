@@ -1,30 +1,12 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { KpiCardDto } from '../../types/company';
-import { CompanyQuarterRisk } from '../../types/risk';
-import { computeDwellTimeDelta, getRecentQuarterWindows } from '../../utils/kpi';
 import KpiCard from '../kpi/KpiCard';
 
 interface KpiCardsProps {
   kpis: KpiCardDto[];
-  riskRecords: CompanyQuarterRisk[];
 }
 
-const formatDelta = (value?: number, suffix = '%'): string | undefined => {
-  if (value === undefined) return undefined;
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${value}${suffix}`;
-};
-
 const formatDecimal = (value: number): string => value.toFixed(1);
-
-const parseNumericValue = (value: KpiCardDto['value']): number | null => {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/[^0-9.-]/g, ''));
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-};
 
 const toTone = (tone?: KpiCardDto['tone']): 'positive' | 'negative' | 'neutral' => {
   if (tone === 'RISK') return 'negative';
@@ -33,105 +15,135 @@ const toTone = (tone?: KpiCardDto['tone']): 'positive' | 'negative' | 'neutral' 
   return 'neutral';
 };
 
-const toDeltaUnit = (deltaUnit?: string | null): string => deltaUnit ?? '%';
+const toDeltaDirection = (direction?: 'UP' | 'DOWN' | 'FLAT'): 'up' | 'down' | 'flat' => {
+  if (direction === 'UP') return 'up';
+  if (direction === 'DOWN') return 'down';
+  return 'flat';
+};
 
-const KpiCards: React.FC<KpiCardsProps> = ({ kpis, riskRecords }) => {
-  const { currentWindow, previousWindow } = useMemo(
-    () => getRecentQuarterWindows(riskRecords, 4),
-    [riskRecords],
-  );
+const findKpi = (kpis: KpiCardDto[], keys: string[]): KpiCardDto | undefined =>
+  kpis.find((item) => keys.includes(item.key));
 
-  const { value: dwellValue, delta: dwellDelta } = useMemo(
-    () => computeDwellTimeDelta(riskRecords, currentWindow, previousWindow),
-    [currentWindow, previousWindow, riskRecords],
-  );
+const formatValue = (value: KpiCardDto['value']): string => {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'string') return value;
+  return Number.isInteger(value) ? String(value) : formatDecimal(value);
+};
 
-  const dwellValueText = dwellValue === null ? '—' : formatDecimal(dwellValue);
-  const dwellDeltaText =
-    dwellDelta === null ? '—' : `${dwellDelta > 0 ? '+' : ''}${formatDecimal(dwellDelta)}`;
+const formatDeltaValue = (delta: NonNullable<KpiCardDto['delta']>): string => {
+  const sign = delta.direction === 'UP' ? '+' : delta.direction === 'DOWN' ? '-' : '';
+  const absValue = Math.abs(delta.value);
+  const valueText = Number.isInteger(absValue) ? String(absValue) : formatDecimal(absValue);
+  return `${sign}${valueText}${delta.unit ?? ''}`;
+};
 
-  const dwellTone: 'positive' | 'negative' | 'neutral' =
-    dwellDelta === null || dwellDelta === 0 ? 'neutral' : dwellDelta > 0 ? 'negative' : 'positive';
+const KPI_ORDER = [
+  'ACTIVE_COMPANIES',
+  'RISK_COMPANIES',
+  'CAUTION_RATE',
+  'NETWORK_STATUS',
+  'RISK_INDEX',
+  'RISK_DWELL_TIME',
+] as const;
 
-  const activeKpi = kpis.find((item) => item.key === 'ACTIVE_COMPANIES');
-  const riskIndexKpi = kpis.find((item) => item.key === 'RISK_INDEX');
-  const networkKpi = kpis.find((item) => item.key === 'NETWORK_HEALTH');
-
-  const activeValue = parseNumericValue(activeKpi?.value) ?? 0;
-  const networkValue = parseNumericValue(networkKpi?.value) ?? 0;
-
-  const cards = [
-    {
-      label: activeKpi?.title ?? '활성 협력사',
-      valueText: activeValue.toString(),
-      deltaText: formatDelta(activeKpi?.delta?.value, toDeltaUnit(activeKpi?.delta?.unit)),
-      icon: 'fa-users',
-      tone: toTone(activeKpi?.tone),
+const KPI_FALLBACKS: Record<
+  string,
+  { icon: string; title: string; unit?: string; tooltip: NonNullable<KpiCardDto['tooltip']> }
+> = {
+  ACTIVE_COMPANIES: {
+    icon: 'fa-users',
+    title: '전체 협력사 수',
+    unit: '개',
+    tooltip: { description: '현재 모니터링 중인 전체 협력사 수입니다.' },
+  },
+  RISK_COMPANIES: {
+    icon: 'fa-triangle-exclamation',
+    title: '고위험 기업 수',
+    unit: '개',
+    tooltip: { description: '최신 ACTUAL 분기에서 위험(RISK)으로 분류된 기업 수입니다.' },
+  },
+  CAUTION_RATE: {
+    icon: 'fa-bell',
+    title: '주의 비율',
+    unit: '%',
+    tooltip: { description: '최신 ACTUAL 분기에서 주의(CAUTION) 상태의 비율입니다.' },
+  },
+  NETWORK_STATUS: {
+    icon: 'fa-heartbeat',
+    title: '네트워크 상태',
+    tooltip: { description: '활성 관심기업의 최신 ACTUAL 분기 internal_health_score 평균입니다.' },
+  },
+  RISK_INDEX: {
+    icon: 'fa-shield-halved',
+    title: '위험 지수',
+    tooltip: {
+      description: '포트폴리오 전체 위험 수준 요약 지표입니다.',
+      interpretation: '주의·위험 구간 증가 시 원인 분석이 필요합니다.',
+      actionHint: '위험 상위 협력사부터 상세 지표를 확인하세요.',
     },
-    {
-      label: '리스크 체류 기간',
-      valueText: dwellValueText,
-      unit: '분기',
-      deltaText: dwellDeltaText,
-      icon: 'fa-hourglass-half',
-      tone: dwellTone,
+  },
+  RISK_DWELL_TIME: {
+    icon: 'fa-hourglass-half',
+    title: '리스크 체류 기간',
+    unit: '분기',
+    tooltip: {
+      description: '주의/위험 상태에 머무른 평균 기간(분기 수)입니다.',
+      interpretation: '낮을수록 리스크 구간에서 빠르게 회복합니다.',
+      actionHint: '체류 기간이 긴 기업을 우선 점검하세요.',
     },
-    {
-      label: riskIndexKpi?.title ?? '위험 지수',
-      valueText: typeof riskIndexKpi?.value === 'string' ? riskIndexKpi.value : '—',
-      deltaText: riskIndexKpi?.delta?.label ?? undefined,
-      icon: 'fa-shield-halved',
-      tone: toTone(riskIndexKpi?.tone),
-    },
-    {
-      label: networkKpi?.title ?? '네트워크 상태',
-      valueText: `${networkValue}%`,
-      deltaText: formatDelta(networkKpi?.delta?.value, toDeltaUnit(networkKpi?.delta?.unit)),
-      icon: 'fa-heartbeat',
-      tone: toTone(networkKpi?.tone),
-    },
-  ];
+  },
+};
+
+const KpiCards: React.FC<KpiCardsProps> = ({ kpis }) => {
+
+  const createDelta = (
+    delta?: KpiCardDto['delta'],
+    fallbackLabel = '전기 대비',
+  ): { value: string; direction: 'up' | 'down' | 'flat'; label?: string } | undefined => {
+    if (!delta) return undefined;
+    return {
+      value: formatDeltaValue(delta),
+      direction: toDeltaDirection(delta.direction),
+      label: delta.label ?? fallbackLabel,
+    };
+  };
+
+  // summary 응답에서 내려온 KPI 순서를 기준으로 최대 6개 카드를 노출합니다.
+  const cards = KPI_ORDER.map((key) => {
+    const aliases =
+      key === 'NETWORK_STATUS'
+        ? ['NETWORK_STATUS', 'NETWORK_HEALTH']
+        : key === 'RISK_DWELL_TIME'
+        ? ['RISK_DWELL_TIME', 'RISK_DWELL']
+        : [key];
+
+    const kpi = findKpi(kpis, aliases);
+    const fallback = KPI_FALLBACKS[key];
+    return {
+      key,
+      label: key === 'ACTIVE_COMPANIES' ? fallback.title : kpi?.title ?? fallback.title,
+      valueText: formatValue(kpi?.value),
+      unit: kpi?.unit ?? fallback.unit,
+      delta: createDelta(kpi?.delta, key === 'RISK_DWELL_TIME' ? '지난 분기 대비' : '전기 대비'),
+      icon: fallback.icon,
+      tone: toTone(kpi?.tone),
+      tooltip: kpi?.tooltip ?? fallback.tooltip,
+    };
+  });
 
   return (
-    <div className="relative z-20 grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <div className="relative z-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-10">
       {cards.map((stat) => {
-        const deltaDirection =
-          stat.tone === 'negative' ? 'down' : stat.tone === 'neutral' ? 'flat' : 'up';
         return (
           <KpiCard
-            key={stat.label}
+            key={stat.key}
             title={stat.label}
             value={stat.valueText}
             unit={stat.unit}
-            delta={stat.deltaText ? { value: stat.deltaText, direction: deltaDirection } : undefined}
+            delta={stat.delta}
             icon={<i className={`fas ${stat.icon}`} />}
             tone={stat.tone === 'negative' ? 'risk' : stat.tone === 'neutral' ? 'warn' : 'good'}
-            tooltip={{
-              description:
-                stat.label === '활성 협력사'
-                  ? '현재 모니터링 중인 협력사 수입니다.'
-                  : stat.label === '리스크 체류 기간'
-                  ? "Risk Dwell Time: 협력사가 '주의/위험' 상태에 머무른 평균 기간(분기 수)입니다."
-                  : stat.label === '위험 지수'
-                  ? '포트폴리오 전체 위험 수준 요약 지표입니다.'
-                  : '협력 네트워크의 전반적 양호 상태 비율입니다.',
-              interpretation:
-                stat.label === '활성 협력사'
-                  ? '증가=신규 편입/재가동, 감소=종료/필터링'
-                  : stat.label === '리스크 체류 기간'
-                  ? '낮을수록 리스크 구간에서 빠르게 회복/탈출합니다.'
-                  : stat.label === '위험 지수'
-                  ? '주의·위험 구간 증가 시 원인 분석이 필요합니다.'
-                  : '하락 시 특정 섹터 이상 가능성이 있습니다.',
-              actionHint:
-                stat.label === '활성 협력사'
-                  ? '급증 시 편입 기준과 데이터 갱신을 확인하세요.'
-                  : stat.label === '리스크 체류 기간'
-                  ? '체류 기간이 긴 협력사를 우선 점검하고, 산업/섹터별로 체류 기간을 비교하세요.'
-                  : stat.label === '위험 지수'
-                  ? '위험 상위 협력사부터 상세 지표를 확인하세요.'
-                  : '최근 공시·외부 변수와 함께 확인하세요.',
-            }}
+            tooltip={stat.tooltip}
           />
         );
       })}

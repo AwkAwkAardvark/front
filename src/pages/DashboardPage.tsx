@@ -5,8 +5,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import KpiCards from '../components/dashboard/KpiCards';
 import RiskStatusTrendCard from '../features/dashboard/risk-status-trend/RiskStatusTrendCard';
 import RiskDistributionCard from '../components/dashboard/RiskDistributionCard';
-import { getDashboardRiskRecords, getDashboardSummary } from '../api/companies';
-import { companyRiskQuarterlyMock } from '../mocks/companyRiskQuarterly.mock';
+import { getDashboardSummary } from '../api/companies';
 import { getMockDashboardSummary } from '../mocks/dashboardSummary.mock';
 import { getStoredUser, logout } from '../services/auth';
 import {
@@ -19,7 +18,6 @@ import {
 } from '../services/adminView';
 import { AdminViewUser } from '../types/adminView';
 import { DashboardSummary, RiskDistribution } from '../types/dashboard';
-import { CompanyQuarterRisk } from '../types/risk';
 
 const buildRiskDistribution = (summary: DashboardSummary): RiskDistribution => {
   const { NORMAL, CAUTION, RISK } = summary.riskStatusDistribution;
@@ -33,6 +31,15 @@ const buildRiskDistribution = (summary: DashboardSummary): RiskDistribution => {
       { key: 'WARN', label: '주의', count: CAUTION, ratio: ratio(CAUTION) },
       { key: 'RISK', label: '높음', count: RISK, ratio: ratio(RISK) },
     ],
+    summary: {
+      avgRiskLevel: summary.averageRiskLevel ?? null,
+      topSector: summary.majorSector
+        ? {
+            key: summary.majorSector.name,
+            label: summary.majorSector.name,
+          }
+        : undefined,
+    },
   };
 };
 
@@ -43,7 +50,6 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [riskDistribution, setRiskDistribution] = useState<RiskDistribution | null>(null);
-  const [riskRecords, setRiskRecords] = useState<CompanyQuarterRisk[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
@@ -66,20 +72,10 @@ const DashboardPage: React.FC = () => {
       const response = await getDashboardSummary({ userId: adminViewUserId });
       setData(response);
       setRiskDistribution(buildRiskDistribution(response));
-      try {
-        const riskResponse = await getDashboardRiskRecords({
-          limit: 200,
-          userId: adminViewUserId,
-        });
-        setRiskRecords(riskResponse);
-      } catch (riskError) {
-        setRiskRecords(companyRiskQuarterlyMock);
-      }
     } catch (error) {
       const fallback = getMockDashboardSummary();
       setData(fallback);
       setRiskDistribution(buildRiskDistribution(fallback));
-      setRiskRecords(companyRiskQuarterlyMock);
       setFallbackMessage('대시보드 API 응답 오류로 목 데이터를 표시하고 있어요.');
     } finally {
       setIsLoading(false);
@@ -136,7 +132,8 @@ const DashboardPage: React.FC = () => {
         adminUsers={adminUsers}
         selectedAdminUserId={adminViewUser?.id}
         onAdminUserChange={(userId) => {
-          const nextUser = adminUsers.find((user) => user.id === userId) ?? null;
+          const nextUser =
+            adminUsers.find((user) => String(user.id) === String(userId)) ?? null;
           setAdminViewUser(nextUser);
           setStoredAdminViewUser(nextUser);
         }}
@@ -150,8 +147,8 @@ const DashboardPage: React.FC = () => {
 
       {isLoading && (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={`kpi-skeleton-${index}`}
                 className="glass-panel p-6 rounded-2xl animate-pulse"
@@ -190,7 +187,7 @@ const DashboardPage: React.FC = () => {
               {fallbackMessage}
             </div>
           )}
-          <KpiCards kpis={data.kpis} riskRecords={riskRecords} />
+          <KpiCards kpis={data.kpis} />
 
           {emptyState && (
             <div className="glass-panel p-10 rounded-2xl text-center text-slate-400 mb-10">

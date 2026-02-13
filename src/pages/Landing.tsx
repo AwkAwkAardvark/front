@@ -7,12 +7,18 @@ import { getStoredUser, login, logout, register } from '../services/auth';
 import TurnstileWidget from '../components/TurnstileWidget';
 import SuccessModal from '../components/common/SuccessModal';
 import LegalLinks from '../components/common/LegalLinks';
+import privacyPolicyContent from '../../docs/privacy-policy.md?raw';
+import termsOfServiceContent from '../../docs/terms-of-service.md?raw';
+import { normalizeLegalMarkdown } from '../utils/legalContent';
 
 type AuthMode = 'login' | 'register';
+type LegalModalType = 'privacy' | 'terms' | null;
 
 const Landing: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -24,12 +30,19 @@ const Landing: React.FC = () => {
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const navigate = useNavigate();
   const isAuthenticated = Boolean(currentUser);
+  const normalizedPrivacyPolicy = normalizeLegalMarkdown(privacyPolicyContent);
+  const normalizedTermsOfService = normalizeLegalMarkdown(termsOfServiceContent);
+  const legalModalTitle = legalModalType === 'privacy' ? '개인정보 처리방침' : '이용약관';
+  const legalModalContent =
+    legalModalType === 'privacy' ? normalizedPrivacyPolicy : normalizedTermsOfService;
 
   // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [agreedPrivacyPolicy, setAgreedPrivacyPolicy] = useState(false);
+  const [agreedTermsOfService, setAgreedTermsOfService] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -46,8 +59,13 @@ const Landing: React.FC = () => {
   useEffect(() => {
     if (authMode !== 'register') {
       setTurnstileToken('');
+      setAgreedPrivacyPolicy(false);
+      setAgreedTermsOfService(false);
     }
   }, [authMode]);
+
+  const isRegisterAgreementCompleted = agreedPrivacyPolicy && agreedTermsOfService;
+  const isRegisterFormLocked = authMode === 'register' && !isRegisterAgreementCompleted;
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +74,11 @@ const Landing: React.FC = () => {
     const trimmedName = name.trim();
     const emailPattern = /^\S+@\S+\.\S+$/;
     const isRegister = authMode === 'register';
+
+    if (isRegister && !isRegisterAgreementCompleted) {
+      setAuthError('개인정보 처리방침과 이용약관에 모두 동의해 주세요.');
+      return;
+    }
 
     if (!trimmedEmail) {
       nextErrors.email = '이메일을 입력해 주세요.';
@@ -166,6 +189,8 @@ const Landing: React.FC = () => {
     setDuplicateEmailError(null);
     setConfirmPassword('');
     setTurnstileToken('');
+    setAgreedPrivacyPolicy(false);
+    setAgreedTermsOfService(false);
   };
 
   const handleTurnstileVerify = useCallback((token: string) => {
@@ -219,13 +244,13 @@ const Landing: React.FC = () => {
 
       {/* Auth Portal Overlay */}
       {showAuth && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-300">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-2xl"
             onClick={() => setShowAuth(false)}
           ></div>
 
-          <div className="relative glass-panel w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500">
+          <div className="relative my-4 sm:my-0 glass-panel w-full max-w-md rounded-[2.5rem] p-10 sm:p-12 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowAuth(false)}
               className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors"
@@ -247,6 +272,52 @@ const Landing: React.FC = () => {
 
             <form onSubmit={handleAuthSubmit} className="space-y-5">
               {authMode === 'register' && (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={agreedPrivacyPolicy}
+                      onChange={(e) => setAgreedPrivacyPolicy(e.target.checked)}
+                      className="h-4 w-4 accent-white"
+                    />
+                    <span>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalType('privacy')}
+                        className="underline underline-offset-2 hover:text-white"
+                      >
+                        개인정보 처리방침
+                      </button>{' '}
+                      동의 (필수)
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={agreedTermsOfService}
+                      onChange={(e) => setAgreedTermsOfService(e.target.checked)}
+                      className="h-4 w-4 accent-white"
+                    />
+                    <span>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalType('terms')}
+                        className="underline underline-offset-2 hover:text-white"
+                      >
+                        이용약관
+                      </button>{' '}
+                      동의 (필수)
+                    </span>
+                  </label>
+                  {!isRegisterAgreementCompleted && (
+                    <p className="text-[11px] text-slate-400">
+                      필수 약관 동의 후 회원가입 입력이 가능합니다.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {authMode === 'register' && (
                 <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                   <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
                     이름
@@ -259,6 +330,7 @@ const Landing: React.FC = () => {
                     placeholder="이름을 입력해 주세요."
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.name)}
+                    disabled={isRegisterFormLocked}
                   />
                   {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
                   {serverFieldErrors.name && (
@@ -289,6 +361,7 @@ const Landing: React.FC = () => {
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={duplicateEmailError ? 'duplicate-email-tooltip' : undefined}
+                  disabled={isRegisterFormLocked}
                 />
                 {duplicateEmailError && (
                   <p id="duplicate-email-tooltip" role="alert" className="text-xs text-red-400">
@@ -315,6 +388,7 @@ const Landing: React.FC = () => {
                   placeholder="********"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                   aria-invalid={Boolean(errors.password)}
+                  disabled={isRegisterFormLocked}
                 />
                 {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
                 {serverFieldErrors.password && (
@@ -337,6 +411,7 @@ const Landing: React.FC = () => {
                     placeholder="********"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-white/30 transition-all outline-none text-white placeholder-slate-700"
                     aria-invalid={Boolean(errors.confirmPassword)}
+                    disabled={isRegisterFormLocked}
                   />
                   {errors.confirmPassword && (
                     <p className="text-xs text-red-400">{errors.confirmPassword}</p>
@@ -349,16 +424,11 @@ const Landing: React.FC = () => {
                 </div>
               )}
 
-              {authMode === 'register' && (
+              {authMode === 'register' && isRegisterAgreementCompleted && (
                 <TurnstileWidget
                   key={turnstileResetKey}
                   className="mt-2"
-                  onVerify={(token) => {
-                    setTurnstileToken(token);
-                    if (token) {
-                      setAuthError(null);
-                    }
-                  }}
+                  onVerify={handleTurnstileVerify}
                 />
               )}
 
@@ -367,7 +437,11 @@ const Landing: React.FC = () => {
               <button
                 type="submit"
                 className="w-full py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-xl mt-4 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={isSubmitting || (authMode === 'register' && !turnstileToken)}
+                disabled={
+                  isSubmitting ||
+                  (authMode === 'register' &&
+                    (!isRegisterAgreementCompleted || !turnstileToken))
+                }
               >
                 {isSubmitting ? '처리 중..' : authMode === 'login' ? '로그인' : '가입'}
               </button>
@@ -382,6 +456,100 @@ const Landing: React.FC = () => {
                 <span>{authMode === 'login' ? '계정 생성' : '로그인으로 돌아가기'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 고객센터/문의 모달 */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowContactModal(false)}
+          ></div>
+          <div className="relative glass-panel w-full max-w-lg rounded-3xl p-8 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setShowContactModal(false)}
+              className="absolute top-5 right-5 text-slate-500 hover:text-white transition-colors"
+              aria-label="문의 모달 닫기"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+            <h3 className="text-2xl font-semibold tracking-tight text-white mb-2">고객센터 및 문의</h3>
+            <p className="text-sm text-slate-400 mb-6">
+              서비스 이용 중 불편사항이나 기업 도입 문의를 남겨주세요.
+            </p>
+            <div className="space-y-4 text-sm">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">서비스명</p>
+                <p className="text-white">SENTINEL</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">책임자</p>
+                <p className="text-white">이석진 / 대표</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">부서명</p>
+                <p className="text-white">SENTINEL</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">이메일</p>
+                <a
+                  href="mailto:dkcladlek098@naver.com"
+                  className="text-white hover:text-slate-300 transition-colors"
+                >
+                  dkcladlek098@naver.com
+                </a>
+              </div>
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">연락처</p>
+                <a
+                  href="tel:01012345678"
+                  className="text-white hover:text-slate-300 transition-colors"
+                >
+                  010-1234-5678
+                </a>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowContactModal(false)}
+              className="mt-6 w-full rounded-2xl border border-white/15 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white hover:bg-white hover:text-black transition-all"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 정책/약관 모달 */}
+      {legalModalType && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setLegalModalType(null)}
+          ></div>
+          <div className="relative glass-panel w-full max-w-3xl rounded-3xl p-8 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setLegalModalType(null)}
+              className="absolute top-5 right-5 text-slate-500 hover:text-white transition-colors"
+              aria-label="정책 모달 닫기"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+            <h3 className="text-2xl font-semibold tracking-tight text-white mb-6">{legalModalTitle}</h3>
+            <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-slate-200 pr-2">
+              {legalModalContent}
+            </div>
+            <button
+              type="button"
+              onClick={() => setLegalModalType(null)}
+              className="mt-6 w-full rounded-2xl border border-white/15 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white hover:bg-white hover:text-black transition-all"
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}
@@ -468,7 +636,7 @@ const Landing: React.FC = () => {
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-6 flex items-center">
-              <span className="w-2 h-2 bg-slate-400 mr-2"></span> Our Company
+              <span className="w-2 h-2 bg-slate-400 mr-2"></span> 핵심 인사이트
             </div>
             <h2 className="text-4xl md:text-5xl serif leading-tight mb-8">
               우리의
@@ -486,7 +654,11 @@ const Landing: React.FC = () => {
                 문제가 발생한 뒤가 아니라, 위험이 커지기 전에 신호를 포착합니다.
               </p>
             </div>
-            <button className="flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white group">
+            <button
+              type="button"
+              onClick={() => setShowContactModal(true)}
+              className="flex items-center space-x-3 text-[10px] uppercase tracking-widest font-bold text-white group"
+            >
               <span className="bg-white text-black p-4 rounded-full group-hover:bg-slate-200 transition-all">
                 <i className="fas fa-plus"></i>
               </span>
@@ -500,13 +672,10 @@ const Landing: React.FC = () => {
       <section className="py-32 px-10 border-t border-white/5 bg-white/[0.01]">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-end mb-20">
-            <h2 className="text-6xl serif font-light">최신 인사이트</h2>
-            <button className="px-6 py-2 border border-white/20 rounded-full text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-              모든 뉴스 보기 <i className="fas fa-arrow-right ml-2"></i>
-            </button>
+            <h2 className="text-6xl serif font-light">핵심 인사이트</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="md:col-span-2 group cursor-pointer">
+            <div className="md:col-span-2 group">
               <div className="aspect-video bg-slate-900 overflow-hidden mb-8">
                 <video
                   src="/img/robot.mp4"
@@ -522,15 +691,12 @@ const Landing: React.FC = () => {
                 <span>RECENT</span>
                 <span>2026.01.26</span>
               </div>
-              <h3 className="text-3xl serif mb-4 group-hover:text-slate-300 transition-colors">
+              <h3 className="text-3xl serif mb-4">
                 데이터 기반 통합 리스크 조기 경보
               </h3>
               <p className="text-slate-500 text-sm mb-6 max-w-xl">
                 수요 지표, 공급망, 외부 환경 데이터를 결합해 기업 위험 신호를 조기에 포착합니다.
               </p>
-              <span className="text-[10px] uppercase tracking-widest font-bold border-b border-white/20 pb-1 group-hover:border-white transition-all">
-                기사 읽기
-              </span>
             </div>
             <div className="space-y-12">
               {[
@@ -538,17 +704,12 @@ const Landing: React.FC = () => {
                 { date: '2025.12.02', title: '사건 이후가 아닌 사전 위험 예측의 중요성' },
                 { date: '2025.11.21', title: 'AI 기반 기업 리스크 분석, 국내 적용 사례' },
               ].map((item, i) => (
-                <div key={i} className="group cursor-pointer border-t border-white/10 pt-8">
+                <div key={i} className="border-t border-white/10 pt-8">
                   <div className="flex justify-between text-[9px] text-slate-600 uppercase tracking-[0.2em] mb-3">
                     <span>뉴스</span>
                     <span>{item.date}</span>
                   </div>
-                  <h4 className="text-xl serif leading-snug group-hover:text-slate-300 transition-colors">
-                    {item.title}
-                  </h4>
-                  <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <i className="fas fa-arrow-right text-xs"></i>
-                  </div>
+                  <h4 className="text-xl serif leading-snug">{item.title}</h4>
                 </div>
               ))}
             </div>
@@ -569,49 +730,24 @@ const Landing: React.FC = () => {
             <br />
             해결합니다.
           </h2>
-          <button
-            onClick={() => {
-              setAuthMode('register');
-              setShowAuth(true);
-            }}
-            className="inline-flex items-center space-x-4 group"
-          >
-            <span className="bg-white text-black w-14 h-14 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <i className="fas fa-plus"></i>
-            </span>
-            <span className="text-[13px] uppercase tracking-[0.3em] font-bold">CONTACT US</span>
-          </button>
         </div>
       </section>
 
       {/* Big Branding Footer */}
       <footer className="pt-24 pb-12 px-10 bg-[#0a0a0a] border-t border-white/5">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 text-[10px] uppercase tracking-widest text-slate-500">
-            <div className="md:col-span-4">
+          <div className="flex flex-col gap-6 text-[10px] uppercase tracking-widest text-slate-500 md:flex-row md:items-start md:justify-between">
+            <div>
               <p className="mb-4">© 2026 SENTINEL. All rights reserved.</p>
             </div>
-            <div className="md:col-span-2 flex flex-col space-y-2">
-              <span className="text-white font-bold mb-2">둘러보기</span>
-              <a href="#" className="hover:text-white transition-colors">
-                회사
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                뉴스룸
-              </a>
-            </div>
-            <div className="md:col-span-2 flex flex-col space-y-2">
-              <span className="text-white font-bold mb-2">연락처</span>
-              <a href="#" className="hover:text-white transition-colors">
-                LinkedIn
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                X
-              </a>
-            </div>
-            <div className="md:col-span-2 flex flex-col space-y-2">
+            <div className="flex flex-col space-y-2">
               <span className="text-white font-bold mb-2">정책</span>
-              <LegalLinks className="flex flex-col space-y-2" linkClassName="hover:text-white transition-colors" />
+              <LegalLinks
+                className="flex flex-col space-y-2"
+                linkClassName="hover:text-white transition-colors text-left"
+                onPrivacyClick={() => setLegalModalType('privacy')}
+                onTermsClick={() => setLegalModalType('terms')}
+              />
             </div>
           </div>
         </div>

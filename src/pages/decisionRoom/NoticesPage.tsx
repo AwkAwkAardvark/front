@@ -31,7 +31,6 @@ const NoticesPage: React.FC = () => {
   const [isLoadingNotices, setIsLoadingNotices] = useState<boolean>(false);
   const [errorNotices, setErrorNotices] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<PostItem | null>(null);
   const [editorTitle, setEditorTitle] = useState('');
   const [editorContent, setEditorContent] = useState('');
   const [editorError, setEditorError] = useState<string | null>(null);
@@ -187,6 +186,10 @@ const NoticesPage: React.FC = () => {
     () => notices.find((notice) => notice.id === selectedNoticeId) ?? null,
     [notices, selectedNoticeId]
   );
+  const selectedPost = useMemo(
+    () => posts.find((post) => String(post.id) === selectedNoticeId) ?? null,
+    [posts, selectedNoticeId]
+  );
 
   useEffect(() => {
     if (!selectedNoticeId) return;
@@ -195,24 +198,10 @@ const NoticesPage: React.FC = () => {
   }, [loadNoticeFiles, noticeFiles, selectedNoticeId]);
 
   const handleOpenCreate = () => {
-    setEditingPost(null);
     setEditorTitle('');
     setEditorContent('');
     setEditorError(null);
     setEditorFiles([]);
-    setEditorOpen(true);
-  };
-
-  const handleOpenEdit = () => {
-    if (!selectedNoticeId) return;
-    const post = posts.find((item) => String(item.id) === selectedNoticeId);
-    if (!post) return;
-    setEditingPost(post);
-    setEditorTitle(post.title);
-    setEditorContent(post.content);
-    setEditorError(null);
-    setEditorFiles([]);
-    loadNoticeFiles(String(post.id));
     setEditorOpen(true);
   };
 
@@ -235,44 +224,22 @@ const NoticesPage: React.FC = () => {
     setEditorError(null);
 
     try {
-      if (editingPost) {
-        const updated = isAdmin
-          ? await updateAdminPost('notices', editingPost.id, {
-              title: editorTitle.trim(),
-              content: editorContent.trim(),
-              isPinned: editingPost.isPinned,
-              status: editingPost.status,
-            })
-          : await updatePost('notices', editingPost.id, {
-              title: editorTitle.trim(),
-              content: editorContent.trim(),
-            });
-        setPosts((prev) =>
-          prev.map((item) => (item.id === updated.id ? updated : item))
-        );
-        setSelectedNoticeId(String(updated.id));
-        if (editorFiles.length > 0) {
-          await uploadPostFiles(updated.id, editorFiles);
-          await loadNoticeFiles(String(updated.id));
-        }
-      } else {
-        const created = isAdmin
-          ? await createAdminPost('notices', {
-              title: editorTitle.trim(),
-              content: editorContent.trim(),
-              isPinned: false,
-              status: 'PUBLISHED',
-            })
-          : await createPost('notices', {
-              title: editorTitle.trim(),
-              content: editorContent.trim(),
-            });
-        setPosts((prev) => [created, ...prev]);
-        setSelectedNoticeId(String(created.id));
-        if (editorFiles.length > 0) {
-          await uploadPostFiles(created.id, editorFiles);
-          await loadNoticeFiles(String(created.id));
-        }
+      const created = isAdmin
+        ? await createAdminPost('notices', {
+            title: editorTitle.trim(),
+            content: editorContent.trim(),
+            isPinned: false,
+            status: 'PUBLISHED',
+          })
+        : await createPost('notices', {
+            title: editorTitle.trim(),
+            content: editorContent.trim(),
+          });
+      setPosts((prev) => [created, ...prev]);
+      setSelectedNoticeId(String(created.id));
+      if (editorFiles.length > 0) {
+        await uploadPostFiles(created.id, editorFiles);
+        await loadNoticeFiles(String(created.id));
       }
       setEditorOpen(false);
     } catch (error) {
@@ -296,11 +263,23 @@ const NoticesPage: React.FC = () => {
     }
   };
 
+  const handleUpdateInModal = async (payload: {
+    title: string;
+    content: string;
+    isPinned: boolean;
+    status: string;
+  }) => {
+    if (!isAdmin || !selectedPost) return;
+    const updated = await updateAdminPost('notices', selectedPost.id, payload);
+    setPosts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    setSelectedNoticeId(String(updated.id));
+  };
+
   return (
     <div className="animate-in fade-in duration-700 space-y-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-4xl font-light serif text-white mb-2">공지 사항</h2>
+          <h2 className="text-4xl font-semibold tracking-tight text-white mb-2">공지 사항</h2>
           <p className="text-slate-400">Official company notices.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -343,7 +322,7 @@ const NoticesPage: React.FC = () => {
       <div className="glass-panel rounded-3xl p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-2xl font-light serif text-white mb-2">공 지 사 항</h3>
+            <h3 className="text-2xl font-semibold tracking-tight text-white mb-2">공 지 사 항</h3>
             <p className="text-xs text-slate-500 uppercase tracking-widest">
               {noticeMode === 'active'
                 ? '최근 3개월 간의 공지사항입니다.'
@@ -405,8 +384,17 @@ const NoticesPage: React.FC = () => {
       <BulletinModal
         open={Boolean(selectedNoticeId)}
         bulletin={selectedNotice}
+        postMeta={
+          selectedPost
+            ? {
+                isPinned: selectedPost.isPinned,
+                status: selectedPost.status,
+              }
+            : null
+        }
         onClose={() => setSelectedNoticeId(null)}
         onDelete={isAdmin ? handleDelete : undefined}
+        onUpdate={isAdmin ? handleUpdateInModal : undefined}
       />
 
       {editorOpen && (
@@ -423,9 +411,7 @@ const NoticesPage: React.FC = () => {
               <i className="fas fa-times"></i>
             </button>
 
-            <h3 className="text-2xl font-light serif text-white mb-6">
-              {editingPost ? '공지 수정' : '새 공지 작성'}
-            </h3>
+            <h3 className="text-2xl font-semibold tracking-tight text-white mb-6">새 공지 작성</h3>
 
             <div className="space-y-4">
               <div>
@@ -494,31 +480,6 @@ const NoticesPage: React.FC = () => {
                   </div>
                 )}
 
-                {editingPost && (
-                  <div className="space-y-2 rounded-2xl border border-white/5 bg-white/5 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                      기존 첨부 파일
-                    </p>
-                    {isLoadingFiles && (
-                      <p className="text-xs text-slate-500">첨부 파일을 불러오는 중...</p>
-                    )}
-                    {errorFiles && <p className="text-xs text-rose-400">{errorFiles}</p>}
-                    {!isLoadingFiles &&
-                      !errorFiles &&
-                      (noticeFiles[String(editingPost.id)]?.length ?? 0) === 0 && (
-                        <p className="text-xs text-slate-500">첨부 파일이 없습니다.</p>
-                      )}
-                    {(noticeFiles[String(editingPost.id)] ?? []).map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300"
-                      >
-                        <span className="truncate max-w-[220px]">{file.originalFilename}</span>
-                        <span className="text-slate-500">{formatFileSize(file.fileSize)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
               {editorError && <p className="text-xs text-rose-400">{editorError}</p>}
             </div>
@@ -540,18 +501,6 @@ const NoticesPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {isAdmin && selectedNotice && (
-        <div className="fixed bottom-8 right-10 z-[90] flex gap-2">
-          <button
-            type="button"
-            onClick={handleOpenEdit}
-            className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-[10px] uppercase tracking-[0.3em] text-white hover:bg-white/20 transition"
-          >
-            수정
-          </button>
         </div>
       )}
     </div>
