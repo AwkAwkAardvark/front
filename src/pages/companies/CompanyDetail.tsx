@@ -11,6 +11,7 @@ import {
   getCompanyAiReportStatus,
   requestCompanyAiReport,
 } from '../../api/companies';
+import { ApiRequestError } from '../../api/client';
 import { getMockCompanyInsights, getMockCompanyOverview } from '../../mocks/companies.mock';
 import { getAuthToken, getStoredUser } from '../../services/auth';
 import {
@@ -203,16 +204,47 @@ const CompanyDetailPage: React.FC = () => {
     companyId: string,
     year: number,
     quarter: number,
+    downloadUrl?: string,
   ) => {
+    const filename = `report_${companyId}_${year}_Q${quarter}.pdf`;
+    if (downloadUrl) {
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+
     const blob = await downloadCompanyAiReport(companyId, { year, quarter });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `report_${companyId}_${year}_Q${quarter}.pdf`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const tryDownloadExistingReport = async (
+    companyId: string,
+    year: number,
+    quarter: number,
+  ): Promise<boolean> => {
+    try {
+      await triggerReportDownload(companyId, year, quarter);
+      return true;
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        const status = error.apiError?.status;
+        if (status === 404 || status === 409) {
+          return false;
+        }
+      }
+      throw error;
+    }
   };
 
   const isReportCompleted = (status?: string, message?: string) => {
@@ -238,7 +270,7 @@ const CompanyDetailPage: React.FC = () => {
         setReportCompletedKey(`${year}-Q${quarter}`);
         setReportStatusMessage('AI 분석 리포트 생성 완료됨');
         if (response.downloadUrl) {
-          await triggerReportDownload(companyDetail.company.id, year, quarter);
+          await triggerReportDownload(companyDetail.company.id, year, quarter, response.downloadUrl);
         }
         clearReportTimer();
         return;
@@ -274,13 +306,35 @@ const CompanyDetailPage: React.FC = () => {
     const currentKey = `${year}-Q${quarter}`;
     if (reportCompletedKey === currentKey) {
       setIsReportGenerating(false);
+      try {
+        const downloaded = await tryDownloadExistingReport(companyId, year, quarter);
+        if (downloaded) {
+          return;
+        }
+      } catch (error) {
+        setReportStatusMessage('AI 리포트 다운로드에 실패했습니다.');
+      }
       setReportStatusMessage('AI 분석 리포트 생성 완료됨');
       if (reportRequestId) {
         const status = await getCompanyAiReportStatus(companyId, reportRequestId);
         if (status.downloadUrl) {
-          await triggerReportDownload(detail.company.id, year, quarter);
+          await triggerReportDownload(detail.company.id, year, quarter, status.downloadUrl);
         }
       }
+      return;
+    }
+
+    try {
+      const downloaded = await tryDownloadExistingReport(companyId, year, quarter);
+      if (downloaded) {
+        setIsReportGenerating(false);
+        setReportCompletedKey(currentKey);
+        setReportStatusMessage('AI 분석 리포트 생성 완료');
+        return;
+      }
+    } catch (error) {
+      setIsReportGenerating(false);
+      setReportStatusMessage('AI 리포트 다운로드에 실패했습니다.');
       return;
     }
 
@@ -297,7 +351,7 @@ const CompanyDetailPage: React.FC = () => {
         setReportCompletedKey(currentKey);
         setReportStatusMessage('AI 분석 리포트 생성 완료됨');
         if (response.downloadUrl) {
-          await triggerReportDownload(detail.company.id, year, quarter);
+          await triggerReportDownload(detail.company.id, year, quarter, response.downloadUrl);
         }
         return;
       }
